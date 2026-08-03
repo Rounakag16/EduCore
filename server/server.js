@@ -19,7 +19,7 @@ app.get("/", (req, res) => {
 	res.send("API Working");
 });
 
-app.post("/clerk", express.json(), clerkWebhooks);
+app.post("/clerk", express.raw({ type: "application/json" }), clerkWebhooks);
 
 // Listen
 app.listen(PORT, () => {
