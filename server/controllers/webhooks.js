@@ -20,9 +20,12 @@ export const clerkWebhooks = async (req, res) => {
 					name: `${data.first_name ?? ""} ${data.last_name ?? ""}`.trim(),
 					imageUrl: data.image_url,
 				};
+				console.log("User data create:", userData);
+
 				await User.create(userData);
-				res.json({});
-				break;
+				console.log("Created user:", createdUser);
+
+				return res.json({ success: true });
 			}
 
 			case "user.updated": {
@@ -31,21 +34,30 @@ export const clerkWebhooks = async (req, res) => {
 					name: `${data.first_name ?? ""} ${data.last_name ?? ""}`.trim(),
 					imageUrl: data.image_url,
 				};
+				console.log("User data update:", userData);
+
 				await User.findByIdAndUpdate(data.id, userData);
-				res.json({});
-				break;
+				console.log("User updated:", userData);
+
+				return res.json({ success: true });
 			}
 
 			case "user.deleted": {
+				console.log("User data delete:", userData);
 				await User.findByIdAndDelete(data.id);
-				res.json({});
-				break;
+				console.log("User data deleted");
+				return res.json({ success: true });
 			}
 
 			default:
 				break;
 		}
 	} catch (err) {
-		res.json({ success: false, message: err.message });
+		console.error("Webhook Error:", err);
+
+		return res.status(500).json({
+			success: false,
+			message: err.message,
+		});
 	}
 };
