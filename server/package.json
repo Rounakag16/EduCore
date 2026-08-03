@@ -1,0 +1,24 @@
+{
+	"name": "server",
+	"version": "1.0.0",
+	"description": "",
+	"main": "server.js",
+	"scripts": {
+		"dev": "nodemon server.js",
+		"start": "node server.js"
+	},
+	"keywords": [],
+	"type": "module",
+	"dependencies": {
+		"@clerk/express": "^2.1.49",
+		"cloudinary": "^2.10.0",
+		"cors": "^2.8.6",
+		"dotenv": "^17.4.2",
+		"express": "^5.2.1",
+		"mongoose": "^9.9.1",
+		"multer": "^2.2.0",
+		"nodemon": "^3.1.14",
+		"stripe": "^22.4.0",
+		"svix": "^1.99.1"
+	}
+}

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="44" viewBox="0 0 180 44" fill="none">
+<defs>
+<linearGradient id="g" x1="0" y1="0" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+<stop stop-color="#2563EB"/><stop offset="1" stop-color="#0EA5E9"/>
+</linearGradient>
+</defs>
+<circle cx="22" cy="22" r="20" fill="url(#g)"/>
+<path d="M30 12H18c-2.2 0-4 1.8-4 4v12c0 2.2 1.8 4 4 4h12v-4H19v-4h9v-4h-9v-4h11v-4z" fill="white"/>
+<circle cx="30" cy="16" r="2" fill="#F59E0B"/>
+<circle cx="30" cy="28" r="2" fill="#F59E0B"/>
+<text x="52" y="29" font-family="Inter,Arial,sans-serif" font-size="24" font-weight="700">
+<tspan fill="#111827">Edu</tspan><tspan fill="#2563EB">Core</tspan>
+</text>
+</svg>
