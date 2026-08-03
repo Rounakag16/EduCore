@@ -4,13 +4,14 @@ import User from "../models/User.js";
 export const clerkWebhooks = async (req, res) => {
 	try {
 		const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
-		await whook.verify(req.body.toString(), {
+		await whook.verify(req.body, {
 			"svix-id": req.headers["svix-id"],
 			"svix-timestamp": req.headers["svix-timestamp"],
 			"svix-signature": req.headers["svix-signature"],
 		});
 
-		const { data, type } = req.body;
+		const payload = JSON.parse(req.body.toString());
+		const { data, type } = payload;
 
 		switch (type) {
 			case "user.created": {
@@ -20,8 +21,6 @@ export const clerkWebhooks = async (req, res) => {
 					name: `${data.first_name ?? ""} ${data.last_name ?? ""}`.trim(),
 					imageUrl: data.image_url,
 				};
-				console.log("User data create:", userData);
-
 				const createdUser = await User.create(userData);
 				console.log("Created user:", createdUser);
 
@@ -34,8 +33,6 @@ export const clerkWebhooks = async (req, res) => {
 					name: `${data.first_name ?? ""} ${data.last_name ?? ""}`.trim(),
 					imageUrl: data.image_url,
 				};
-				console.log("User data update:", userData);
-
 				await User.findByIdAndUpdate(data.id, userData);
 				console.log("User updated:", userData);
 
@@ -43,9 +40,8 @@ export const clerkWebhooks = async (req, res) => {
 			}
 
 			case "user.deleted": {
-				console.log("User data delete:", data.id);
 				await User.findByIdAndDelete(data.id);
-				console.log("User data deleted");
+				console.log("User data deleted: ", data.id);
 				return res.json({ success: true });
 			}
 
