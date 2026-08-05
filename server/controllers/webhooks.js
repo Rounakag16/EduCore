@@ -63,6 +63,7 @@ export const clerkWebhooks = async (req, res) => {
 
 const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
 export const stripeWebhooks = async (req, res) => {
+	console.log(process.env.STRIPE_SECRET_KEY);
 	let event;
 	const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET;
 	if (endpointSecret) {
@@ -101,6 +102,10 @@ export const stripeWebhooks = async (req, res) => {
 			purchaseData.status = "completed";
 			await purchaseData.save();
 
+			console.log(session.id);
+			console.log(session.payment_status);
+			console.log(session.url);
+
 			break;
 		}
 
@@ -118,12 +123,20 @@ export const stripeWebhooks = async (req, res) => {
 			purchaseData.status = "failed";
 			await purchaseData.save();
 
+			console.log(session.id);
+			console.log(session.payment_status);
+			console.log(session.url);
+
 			break;
 		}
 
 		default:
 			console.log(`Unhandled event type ${event.type}`);
 	}
+
+	console.log(session.id);
+	console.log(session.payment_status);
+	console.log(session.url);
 
 	// Return a res to acknowledge receipt of the event
 	res.json({ received: true });
