@@ -133,11 +133,6 @@ export const stripeWebhooks = async (req, res) => {
 		default:
 			console.log(`Unhandled event type ${event.type}`);
 	}
-
-	console.log(session.id);
-	console.log(session.payment_status);
-	console.log(session.url);
-
 	// Return a res to acknowledge receipt of the event
 	res.json({ received: true });
 };

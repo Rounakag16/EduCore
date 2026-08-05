@@ -45,7 +45,7 @@ const CourseDetails = () => {
 				{
 					courseId: courseData._id,
 				},
-				{},
+				{ headers: { Authorization: `Bearer ${token}` } },
 			);
 
 			if (data.success) {
