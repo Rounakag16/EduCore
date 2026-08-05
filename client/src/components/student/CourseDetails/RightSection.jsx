@@ -3,9 +3,7 @@ import { assets } from "../../../assets/assets";
 import { AppContext } from "../../../context/AppContext";
 import YouTube from "react-youtube";
 
-const RightSection = ({ playerData, setPlayerData }) => {
-	const [isAlreadyEnrolled, setIsAlreadyEnrolled] = useState(false);
-
+const RightSection = ({ playerData, setPlayerData, isAlreadyEnrolled, enrollCourse }) => {
 	const {
 		courseData,
 		currency,
@@ -28,11 +26,7 @@ const RightSection = ({ playerData, setPlayerData }) => {
 
 			<div className="p-5">
 				<div className="flex items-center gap-2">
-					<img
-						className="w-3.5"
-						src={assets.time_left_clock_icon}
-						alt="time left clock icon"
-					/>
+					<img className="w-3.5" src={assets.time_left_clock_icon} alt="time left clock icon" />
 
 					<p className="text-red-500">
 						<span className="font-medium">5 days</span> left at this price
@@ -70,13 +64,14 @@ const RightSection = ({ playerData, setPlayerData }) => {
 						<p> {calculateNumberOfLectures(courseData)} lessons</p>
 					</div>
 				</div>
-				<button className="md:mt-6 mt-4 w-full py-3 rounded bg-blue-600 text-white font-medium">
+				<button
+					onClick={enrollCourse}
+					className="md:mt-6 mt-4 w-full py-3 rounded bg-blue-600 text-white font-medium"
+				>
 					{isAlreadyEnrolled ? "Already Enrolled" : "Enroll Now"}
 				</button>
 				<div className="pt-6">
-					<p className="md:text-xl text-lg font-medium text-gray-800">
-						What's in the course?
-					</p>
+					<p className="md:text-xl text-lg font-medium text-gray-800">What's in the course?</p>
 					<ul className="ml-4 pt-2 text-sm md:text-default list-disc text-gray-500">
 						<li>Lifetime access with future course updates.</li>
 						<li>Learn from industry experts through practical lessons.</li>

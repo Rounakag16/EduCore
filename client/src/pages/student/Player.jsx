@@ -5,21 +5,41 @@ import humanizeDuration from "humanize-duration";
 import { AppContext } from "../../context/AppContext";
 import YouTube from "react-youtube";
 import Rating from "../../components/student/Rating";
+import axios from "axios";
+import { toast } from "react-toastify";
+import Loading from "../../components/student/Loading";
 
 const Player = () => {
 	const [openSections, setOpenSections] = useState({});
 	const [courseData, setCourseData] = useState(null);
 	const [playerData, setPlayerData] = useState(null);
+	const [progressData, setProgressData] = useState(null);
+	const [initialRating, setInitialRating] = useState(null);
 
 	const { courseId } = useParams();
 
-	const { enrolledCourses, calculateChapterTime } = useContext(AppContext);
+	const {
+		enrolledCourses,
+		calculateChapterTime,
+		backendUrl,
+		getToken,
+		userData,
+		fetchUserEnrolledCourses,
+	} = useContext(AppContext);
 
 	//Find the course
 	const getCourseData = () => {
-		enrolledCourses.map((course) => {
-			if (course._id == courseId) setCourseData(course);
-		});
+		const course = enrolledCourses.find((course) => course._id === courseId);
+
+		if (course) {
+			setCourseData(course);
+
+			const userRating = course.courseRatings.find((item) => item.userId === userData?._id);
+
+			if (userRating) {
+				setInitialRating(userRating.rating);
+			}
+		}
 	};
 
 	//Toggle lectures under chapters
@@ -27,11 +47,85 @@ const Player = () => {
 		setOpenSections((prev) => ({ ...prev, [index]: !prev[index] }));
 	};
 
-	useEffect(() => {
-		getCourseData();
-	}, [enrolledCourses]);
+	//Get Course Progress
+	const getCourseProgress = async () => {
+		try {
+			const token = await getToken();
+			const { data } = await axios.post(
+				backendUrl + "/api/user/get-course-progress",
+				{ courseId },
+				{ headers: { Authorization: `Bearer ${token}` } },
+			);
 
-	return (
+			if (data.success) {
+				setProgressData(data.progressData);
+			} else {
+				toast.error(data.message);
+			}
+		} catch (error) {
+			toast.error(error.message);
+		}
+	};
+
+	//Mark Completed
+	const markCompleted = async (lectureId) => {
+		try {
+			const token = await getToken();
+			const { data } = await axios.post(
+				backendUrl + "/api/user/update-course-progress",
+				{ courseId, lectureId },
+				{ headers: { Authorization: `Bearer ${token}` } },
+			);
+
+			if (data.success) {
+				toast.success(data.message);
+				getCourseProgress();
+			} else {
+				toast.error(data.message);
+			}
+		} catch (error) {
+			toast.error(error.message);
+		}
+	};
+
+	//Rating handler
+	const handleRate = async (rating) => {
+		try {
+			const token = await getToken();
+
+			const { data } = await axios.post(
+				backendUrl + "/api/user/add-rating",
+				{ courseId, rating },
+				{
+					headers: {
+						Authorization: `Bearer ${token}`,
+					},
+				},
+			);
+
+			if (data.success) {
+				toast.success(data.message);
+				fetchUserEnrolledCourses();
+				getCourseData();
+			} else {
+				toast.error(data.message);
+			}
+		} catch (error) {
+			toast.error(error.message);
+		}
+	};
+
+	useEffect(() => {
+		if (enrolledCourses.length > 0 && userData) {
+			getCourseData();
+		}
+	}, [enrolledCourses, userData, courseId]);
+
+	useEffect(() => {
+		getCourseProgress();
+	}, [courseId]);
+
+	return courseData ? (
 		<>
 			<div className="p-4 sm:p-10 flex flex-col-reverse md:grid md:grid-cols-2 gap-10 md:px-36">
 				{/* Left column */}
@@ -66,7 +160,11 @@ const Player = () => {
 												<li key={index} className="flex items-start gap-2 py-1">
 													<img
 														className="w-4 h-4 mt-1"
-														src={false ? assets.blue_tick_icon : assets.play_icon}
+														src={
+															progressData?.lectureCompleted?.includes(lecture.lectureId)
+																? assets.blue_tick_icon
+																: assets.play_icon
+														}
 														alt="play icon"
 													/>
 													<div className="flex items-center justify-between w-full text-gray-800 text-xs md:text-default">
@@ -102,7 +200,7 @@ const Player = () => {
 					</div>
 					<div className="flex items-center gap-2 py-3 mt-10">
 						<h1 className="text-xl font-bold">Rate this Course:</h1>
-						<Rating initialRating={0} />
+						<Rating initialRating={initialRating} onRate={handleRate} />
 					</div>
 				</div>
 				{/* Right column */}
@@ -117,7 +215,14 @@ const Player = () => {
 								<p>
 									{playerData.chapter}.{playerData.lecture} {playerData.lectureTitle}
 								</p>
-								<button className="text-blue-600">{false ? "Completed" : "Mark Complete"}</button>
+								<button
+									onClick={() => markCompleted(playerData.lectureId)}
+									className="text-blue-600"
+								>
+									{progressData?.lectureCompleted?.includes(playerData.lectureId)
+										? "Completed"
+										: "Mark Complete"}
+								</button>
 							</div>
 						</div>
 					) : (
@@ -126,6 +231,8 @@ const Player = () => {
 				</div>
 			</div>
 		</>
+	) : (
+		<Loading />
 	);
 };
 

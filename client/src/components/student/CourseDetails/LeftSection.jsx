@@ -32,11 +32,7 @@ const LeftSection = ({ playerData, setPlayerData }) => {
 						<img
 							className="w-3.5 h-3.5"
 							key={i}
-							src={
-								i < Math.floor(calculateRating(courseData))
-									? assets.star
-									: assets.star_blank
-							}
+							src={i < Math.floor(calculateRating(courseData)) ? assets.star : assets.star_blank}
 							alt="rating_star"
 						/>
 					))}
@@ -51,7 +47,7 @@ const LeftSection = ({ playerData, setPlayerData }) => {
 				</p>
 			</div>
 			<p className="text-sm">
-				Course by <span className="text-blue-600 underline">Rounak Agarwal</span>
+				Course by <span className="text-blue-600 underline">{courseData.educator.name}</span>
 			</p>
 			<div className="pt-8 text-gray-800">
 				<h2 className="text-xl font-semibold">Course Structure</h2>
@@ -68,14 +64,10 @@ const LeftSection = ({ playerData, setPlayerData }) => {
 										src={assets.down_arrow_icon}
 										alt="down arrow icon"
 									/>
-									<p className="font-medium md:text-base text-sm">
-										{chapter.chapterTitle}
-									</p>
+									<p className="font-medium md:text-base text-sm">{chapter.chapterTitle}</p>
 								</div>
 								<p className="text-sm md:text-default">
-									{Array.isArray(chapter.chapterContent)
-										? chapter.chapterContent.length
-										: 0}{" "}
+									{Array.isArray(chapter.chapterContent) ? chapter.chapterContent.length : 0}{" "}
 									lectures - {calculateChapterTime(chapter)}
 								</p>
 							</div>
@@ -85,11 +77,7 @@ const LeftSection = ({ playerData, setPlayerData }) => {
 								<ul className="list-disc md:pl-10 pl-4 pr-4 py-2 text-gray-600 border-t border-gray-300">
 									{chapter.chapterContent.map((lecture, index) => (
 										<li key={index} className="flex items-start gap-2 py-1">
-											<img
-												className="w-4 h-4 mt-1"
-												src={assets.play_icon}
-												alt="play icon"
-											/>
+											<img className="w-4 h-4 mt-1" src={assets.play_icon} alt="play icon" />
 											<div className="flex items-center justify-between w-full text-gray-800 text-xs md:text-default">
 												<p>{lecture.lectureTitle}</p>
 												<div className="flex gap-2">
@@ -97,9 +85,7 @@ const LeftSection = ({ playerData, setPlayerData }) => {
 														<p
 															onClick={() =>
 																setPlayerData({
-																	videoId: lecture.lectureUrl
-																		.split("/")
-																		.pop(),
+																	videoId: lecture.lectureUrl.split("/").pop(),
 																})
 															}
 															className="text-blue-500 cursor-pointer"
@@ -108,12 +94,9 @@ const LeftSection = ({ playerData, setPlayerData }) => {
 														</p>
 													)}
 													<p>
-														{humanizeDuration(
-															lecture.lectureDuration * 60 * 1000,
-															{
-																units: ["h", "m"],
-															},
-														)}
+														{humanizeDuration(lecture.lectureDuration * 60 * 1000, {
+															units: ["h", "m"],
+														})}
 													</p>
 												</div>
 											</div>
