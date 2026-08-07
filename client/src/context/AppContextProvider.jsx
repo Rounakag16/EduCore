@@ -16,13 +16,31 @@ export const AppContextProvider = (props) => {
 	const { user } = useUser();
 
 	const [allCourses, setAllCourses] = useState([]);
+	const [coursesLoading, setCoursesLoading] = useState(true);
 	const [isEducator, setIsEducator] = useState(false);
 	const [courseData, setCourseData] = useState(null);
 	const [enrolledCourses, setEnrolledCourses] = useState([]);
+	const [enrolledCoursesLoading, setEnrolledCoursesLoading] = useState(false);
 	const [userData, setUserData] = useState(null);
+
+	// Dark mode: persisted in localStorage, applied as a class on <html> so
+	// Tailwind's `dark:` variant (see the @custom-variant in index.css) works.
+	const [isDarkMode, setIsDarkMode] = useState(() => {
+		const stored = localStorage.getItem("theme");
+		if (stored) return stored === "dark";
+		return window.matchMedia("(prefers-color-scheme: dark)").matches;
+	});
+
+	const toggleTheme = () => setIsDarkMode((prev) => !prev);
+
+	useEffect(() => {
+		document.documentElement.classList.toggle("dark", isDarkMode);
+		localStorage.setItem("theme", isDarkMode ? "dark" : "light");
+	}, [isDarkMode]);
 
 	//Fetch all courses
 	const fetchAllCourses = async () => {
+		setCoursesLoading(true);
 		try {
 			const { data } = await axios.get(backendUrl + "/api/course/all");
 
@@ -33,6 +51,8 @@ export const AppContextProvider = (props) => {
 			}
 		} catch (error) {
 			toast.error(error.message);
+		} finally {
+			setCoursesLoading(false);
 		}
 	};
 
@@ -58,6 +78,7 @@ export const AppContextProvider = (props) => {
 
 	//Fetch user enrolled courses
 	const fetchUserEnrolledCourses = async () => {
+		setEnrolledCoursesLoading(true);
 		try {
 			const token = await getToken();
 			const { data } = await axios.get(backendUrl + "/api/user/enrolled-courses", {
@@ -71,6 +92,8 @@ export const AppContextProvider = (props) => {
 			}
 		} catch (error) {
 			toast.error(error.message);
+		} finally {
+			setEnrolledCoursesLoading(false);
 		}
 	};
 
@@ -125,6 +148,7 @@ export const AppContextProvider = (props) => {
 	const value = {
 		currency,
 		allCourses,
+		coursesLoading,
 		courseData,
 		setCourseData,
 		navigate,
@@ -135,12 +159,15 @@ export const AppContextProvider = (props) => {
 		calculateCourseDuration,
 		calculateNumberOfLectures,
 		enrolledCourses,
+		enrolledCoursesLoading,
 		fetchUserEnrolledCourses,
 		backendUrl,
 		userData,
 		setUserData,
 		getToken,
 		fetchAllCourses,
+		isDarkMode,
+		toggleTheme,
 	};
 
 	return <AppContext.Provider value={value}>{props.children}</AppContext.Provider>;

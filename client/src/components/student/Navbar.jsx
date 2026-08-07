@@ -5,12 +5,14 @@ import { useClerk, UserButton, useUser } from "@clerk/react";
 import { AppContext } from "../../context/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
+import ThemeToggle from "../ThemeToggle";
 
 const Navbar = () => {
 	const isCourseListPage = location.pathname.includes("/course-list");
 	const { openSignIn } = useClerk();
 	const { user } = useUser();
-	const { navigate, isEducator, setIsEducator, backendUrl, getToken } = useContext(AppContext);
+	const { navigate, isEducator, setIsEducator, backendUrl, getToken, isDarkMode } =
+		useContext(AppContext);
 
 	const becomeEducator = async () => {
 		try {
@@ -38,15 +40,15 @@ const Navbar = () => {
 	return (
 		<>
 			<div
-				className={`flex items-center justify-between px-4 sm:px-10 md:px-14 lg:px-36 border-b border-gray-500 py-4 ${isCourseListPage ? "bg-white" : "bg-cyan-100/70"}`}
+				className={`flex items-center justify-between px-4 sm:px-10 md:px-14 lg:px-36 border-b border-gray-500 dark:border-gray-700 py-4 ${isCourseListPage ? "bg-white dark:bg-gray-900" : "bg-cyan-100/70 dark:bg-gray-800"}`}
 			>
 				<img
-					src={assets.logo}
+					src={isDarkMode ? assets.logo_dark : assets.logo}
 					alt="Logo"
 					className="w-36 lg:w-40 cursor-pointer"
 					onClick={() => navigate("/")}
 				/>
-				<div className="hidden md:flex items-center gap-5 text-gray-500">
+				<div className="hidden md:flex items-center gap-5 text-gray-500 dark:text-gray-300">
 					<div className="flex items-center gap-5">
 						{user && (
 							<>
@@ -57,6 +59,7 @@ const Navbar = () => {
 							</>
 						)}
 					</div>
+					<ThemeToggle />
 					{user ? (
 						<UserButton />
 					) : (
@@ -69,7 +72,7 @@ const Navbar = () => {
 					)}
 				</div>
 				{/* For Mobile */}
-				<div className="md:hidden flex items-center gap-2 sm:gap-5 text-gray-500">
+				<div className="md:hidden flex items-center gap-2 sm:gap-5 text-gray-500 dark:text-gray-300">
 					<div className="flex items-center gap-1 sm:gap-2 max-sm:text-xs">
 						{user && (
 							<>
@@ -80,11 +83,12 @@ const Navbar = () => {
 							</>
 						)}
 					</div>
+					<ThemeToggle />
 					{user ? (
 						<UserButton />
 					) : (
 						<button onClick={() => openSignIn()}>
-							<img src={assets.user_icon} alt="" />
+							<img src={assets.user_icon} alt="" className="dark:invert" />
 						</button>
 					)}
 				</div>
