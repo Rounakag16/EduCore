@@ -4,7 +4,6 @@ import Quill from "quill";
 import { assets } from "../../assets/assets";
 import { AppContext } from "../../context/AppContext";
 import { toast } from "react-toastify";
-import { get } from "mongoose";
 import axios from "axios";
 
 const AddCourse = () => {
@@ -96,7 +95,7 @@ const AddCourse = () => {
 	const handleSubmit = async (e) => {
 		try {
 			e.preventDefault();
-			if (!image) toast.error("Thumbnail Not Selected");
+			if (!image) return toast.error("Thumbnail Not Selected");
 
 			const courseData = {
 				courseTitle,

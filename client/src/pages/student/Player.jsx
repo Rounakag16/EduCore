@@ -67,6 +67,13 @@ const Player = () => {
 		}
 	};
 
+	//Extract YouTube video ID
+	const getYoutubeId = (url) => {
+		if (!url) return "";
+		const match = url.match(/(?:youtu\.be\/|v=|embed\/)([^&?/]+)/);
+		return match ? match[1] : url.split("/").pop();
+	};
+
 	//Mark Completed
 	const markCompleted = async (lectureId) => {
 		try {
@@ -208,7 +215,7 @@ const Player = () => {
 					{playerData ? (
 						<div>
 							<YouTube
-								videoId={playerData.lectureUrl.split("/").pop()}
+								videoId={getYoutubeId(playerData.lectureUrl)}
 								iframeClassName="w-full aspect-video"
 							/>
 							<div className="flex justify-between items-center mt-1">
