@@ -1,4 +1,3 @@
-import { clerkClient } from "@clerk/express";
 import Course from "../models/Course.js";
 import { v2 as cloudinary } from "cloudinary";
 import Purchase from "../models/Purchase.js";
@@ -7,18 +6,8 @@ import User from "../models/User.js";
 // Update role to educator
 export const updateRoleToEducator = async (req, res) => {
 	try {
-		const { userId } = await req.auth();
-		if (!userId) {
-			return res.status(401).json({
-				success: false,
-				message: "Unauthorized",
-			});
-		}
-		await clerkClient.users.updateUserMetadata(userId, {
-			publicMetadata: {
-				role: "educator",
-			},
-		});
+		const userId = req.user.id;
+		await User.findByIdAndUpdate(userId, { role: "educator" });
 
 		res.json({ success: true, message: "You can publish course now" });
 	} catch (error) {
@@ -34,8 +23,7 @@ export const addCourse = async (req, res) => {
 	try {
 		const { courseData } = req.body;
 		const imageFile = req.file;
-		const { userId } = await req.auth();
-		const educatorId = userId;
+		const educatorId = req.user.id;
 
 		if (!imageFile) {
 			return res.status(400).json({
@@ -66,8 +54,7 @@ export const addCourse = async (req, res) => {
 // Get educator courses
 export const getEducatorCourses = async (req, res) => {
 	try {
-		const { userId } = await req.auth();
-		const educator = userId;
+		const educator = req.user.id;
 
 		const courses = await Course.find({ educator });
 		res.json({ success: true, courses });
@@ -82,8 +69,7 @@ export const getEducatorCourses = async (req, res) => {
 // Get educator dashboard data
 export const educatorDashboardData = async (req, res) => {
 	try {
-		const { userId } = await req.auth();
-		const educator = userId;
+		const educator = req.user.id;
 		const courses = await Course.find({ educator });
 		const totalCourses = courses.length;
 
@@ -134,8 +120,7 @@ export const educatorDashboardData = async (req, res) => {
 // Get enrolled data with purchase data
 export const getEnrolledStudentsData = async (req, res) => {
 	try {
-		const { userId } = await req.auth();
-		const educator = userId;
+		const educator = req.user.id;
 		const courses = await Course.find({ educator });
 		const courseIds = courses.map((course) => course._id);
 

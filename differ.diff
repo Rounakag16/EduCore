@@ -1,0 +1,1200 @@
+diff --git a/client/package.json b/client/package.json
+index a9c4eb1..f14f79c 100644
+--- a/client/package.json
++++ b/client/package.json
+@@ -10,7 +10,6 @@
+     "preview": "vite preview"
+   },
+   "dependencies": {
+-    "@clerk/react": "^6.12.8",
+     "@tailwindcss/vite": "^4.3.3",
+     "axios": "^1.19.0",
+     "humanize-duration": "^3.34.0",
+diff --git a/client/src/App.jsx b/client/src/App.jsx
+index 0178ac4..02561cf 100644
+--- a/client/src/App.jsx
++++ b/client/src/App.jsx
+@@ -13,6 +13,9 @@ import MyCourses from "./pages/educator/MyCourses";
+ import StudentsEnrolled from "./pages/educator/StudentsEnrolled";
+ import Navbar from "./components/student/Navbar";
+ import Footer from "./components/student/Footer";
++import Login from "./pages/auth/Login";
++import Register from "./pages/auth/Register";
++import ProtectedRoute from "./components/ProtectedRoute";
+ import "quill/dist/quill.snow.css";
+ import { ToastContainer } from "react-toastify";
+ 
+@@ -28,11 +31,34 @@ const App = () => {
+ 				<Route path="/course-list" element={<CoursesList />} />
+ 				<Route path="/course-list/:input" element={<CoursesList />} />
+ 				<Route path="/course/:id" element={<CourseDetails />} />
+-				<Route path="/my-enrollments" element={<MyEnrollments />} />
+-				<Route path="/player/:courseId" element={<Player />} />
++				<Route path="/login" element={<Login />} />
++				<Route path="/register" element={<Register />} />
++				<Route
++					path="/my-enrollments"
++					element={
++						<ProtectedRoute>
++							<MyEnrollments />
++						</ProtectedRoute>
++					}
++				/>
++				<Route
++					path="/player/:courseId"
++					element={
++						<ProtectedRoute>
++							<Player />
++						</ProtectedRoute>
++					}
++				/>
+ 				<Route path="/loading/:path" element={<Loading />} />
+ 
+-				<Route path="/educator" element={<Educator />}>
++				<Route
++					path="/educator"
++					element={
++						<ProtectedRoute requireEducator>
++							<Educator />
++						</ProtectedRoute>
++					}
++				>
+ 					<Route index element={<Dashboard />} />
+ 					<Route path="add-course" element={<AddCourse />} />
+ 					<Route path="my-courses" element={<MyCourses />} />
+diff --git a/client/src/components/ProtectedRoute.jsx b/client/src/components/ProtectedRoute.jsx
+new file mode 100644
+index 0000000..7832867
+--- /dev/null
++++ b/client/src/components/ProtectedRoute.jsx
+@@ -0,0 +1,27 @@
++import React, { useContext } from "react";
++import { Navigate } from "react-router-dom";
++import { AppContext } from "../context/AppContext";
++
++// Wrap any route that requires a logged-in user. Also supports a
++// `requireEducator` flag for the /educator/* section.
++const ProtectedRoute = ({ children, requireEducator = false }) => {
++	const { token, userData, isEducator } = useContext(AppContext);
++
++	if (!token) {
++		return <Navigate to="/login" replace />;
++	}
++
++	// userData is still loading (token exists but /api/auth/me hasn't
++	// resolved yet) — render nothing briefly rather than bouncing to login.
++	if (!userData) {
++		return null;
++	}
++
++	if (requireEducator && !isEducator) {
++		return <Navigate to="/" replace />;
++	}
++
++	return children;
++};
++
++export default ProtectedRoute;
+diff --git a/client/src/components/UserMenu.jsx b/client/src/components/UserMenu.jsx
+new file mode 100644
+index 0000000..6e81ec4
+--- /dev/null
++++ b/client/src/components/UserMenu.jsx
+@@ -0,0 +1,55 @@
++import React, { useContext, useRef, useState } from "react";
++import { AppContext } from "../context/AppContext";
++import { assets } from "../assets/assets";
++
++const UserMenu = () => {
++	const { userData, logout } = useContext(AppContext);
++	const [open, setOpen] = useState(false);
++	const closeTimeout = useRef(null);
++
++	if (!userData) return null;
++
++	const handleMouseLeave = () => {
++		closeTimeout.current = setTimeout(() => setOpen(false), 150);
++	};
++	const handleMouseEnter = () => {
++		if (closeTimeout.current) clearTimeout(closeTimeout.current);
++	};
++
++	return (
++		<div
++			className="relative"
++			onMouseEnter={handleMouseEnter}
++			onMouseLeave={handleMouseLeave}
++		>
++			<button
++				onClick={() => setOpen((prev) => !prev)}
++				className="flex items-center gap-2"
++			>
++				<img
++					src={userData.imageUrl || assets.profile_img}
++					alt={userData.name}
++					className="w-8 h-8 rounded-full object-cover"
++				/>
++			</button>
++			{open && (
++				<div className="absolute right-0 mt-2 w-44 bg-white dark:bg-gray-800 border border-gray-500/20 dark:border-gray-700 rounded-md shadow-lg py-2 z-50 text-sm">
++					<div className="px-4 py-2 border-b border-gray-500/10 dark:border-gray-700">
++						<p className="font-medium text-gray-800 dark:text-gray-100 truncate">
++							{userData.name}
++						</p>
++						<p className="text-gray-500 dark:text-gray-400 truncate">{userData.email}</p>
++					</div>
++					<button
++						onClick={logout}
++						className="w-full text-left px-4 py-2 text-red-600 hover:bg-gray-100 dark:hover:bg-gray-700"
++					>
++						Log out
++					</button>
++				</div>
++			)}
++		</div>
++	);
++};
++
++export default UserMenu;
+diff --git a/client/src/components/educator/Navbar.jsx b/client/src/components/educator/Navbar.jsx
+index 22f50ac..a03891c 100644
+--- a/client/src/components/educator/Navbar.jsx
++++ b/client/src/components/educator/Navbar.jsx
+@@ -1,13 +1,12 @@
+ import React, { useContext } from "react";
+ import { assets } from "../../assets/assets";
+ import { Link } from "react-router-dom";
+-import { UserButton, useUser } from "@clerk/react";
+ import { AppContext } from "../../context/AppContext";
+ import ThemeToggle from "../ThemeToggle";
++import UserMenu from "../UserMenu";
+ 
+ const Navbar = () => {
+-	const { user } = useUser();
+-	const { isDarkMode } = useContext(AppContext);
++	const { isDarkMode, userData } = useContext(AppContext);
+ 	return (
+ 		<div className="flex items-center justify-between px-4 md:px-8 border-b border-gray-500 dark:border-gray-700 py-3 bg-white dark:bg-gray-900">
+ 			<Link to="/">
+@@ -19,8 +18,8 @@ const Navbar = () => {
+ 			</Link>
+ 			<div className="flex items-center gap-5 text-gray-500 dark:text-gray-300 relative">
+ 				<ThemeToggle />
+-				<p>Hi! {user ? user.fullName : "Developers"}</p>
+-				{user ? <UserButton /> : <img className="max-w-8" src={assets.profile_img} />}
++				<p>Hi! {userData ? userData.name : "Educator"}</p>
++				{userData ? <UserMenu /> : <img className="max-w-8" src={assets.profile_img} />}
+ 			</div>
+ 		</div>
+ 	);
+diff --git a/client/src/components/student/CallToAction.jsx b/client/src/components/student/CallToAction.jsx
+index cd492fb..51873b3 100644
+--- a/client/src/components/student/CallToAction.jsx
++++ b/client/src/components/student/CallToAction.jsx
+@@ -1,18 +1,15 @@
+ import React, { useContext } from "react";
+ import { assets } from "../../assets/assets";
+-import { useClerk, useUser } from "@clerk/react";
+ import { AppContext } from "../../context/AppContext";
+ 
+ const CallToAction = () => {
+-	const { navigate } = useContext(AppContext);
+-	const { user } = useUser();
+-	const { openSignIn } = useClerk();
++	const { navigate, userData } = useContext(AppContext);
+ 
+ 	const handleGetStarted = () => {
+-		if (user) {
++		if (userData) {
+ 			navigate("/course-list");
+ 		} else {
+-			openSignIn();
++			navigate("/register");
+ 		}
+ 	};
+ 
+diff --git a/client/src/components/student/Navbar.jsx b/client/src/components/student/Navbar.jsx
+index fb89bd8..e1ab7b8 100644
+--- a/client/src/components/student/Navbar.jsx
++++ b/client/src/components/student/Navbar.jsx
+@@ -1,18 +1,23 @@
+ import React, { useContext } from "react";
+ import { assets } from "../../assets/assets";
+ import { Link } from "react-router-dom";
+-import { useClerk, UserButton, useUser } from "@clerk/react";
+ import { AppContext } from "../../context/AppContext";
+ import axios from "axios";
+ import { toast } from "react-toastify";
+ import ThemeToggle from "../ThemeToggle";
++import UserMenu from "../UserMenu";
+ 
+ const Navbar = () => {
+ 	const isCourseListPage = location.pathname.includes("/course-list");
+-	const { openSignIn } = useClerk();
+-	const { user } = useUser();
+-	const { navigate, isEducator, setIsEducator, backendUrl, getToken, isDarkMode } =
+-		useContext(AppContext);
++	const {
++		navigate,
++		isEducator,
++		setIsEducator,
++		backendUrl,
++		getToken,
++		isDarkMode,
++		userData,
++	} = useContext(AppContext);
+ 
+ 	const becomeEducator = async () => {
+ 		try {
+@@ -50,7 +55,7 @@ const Navbar = () => {
+ 				/>
+ 				<div className="hidden md:flex items-center gap-5 text-gray-500 dark:text-gray-300">
+ 					<div className="flex items-center gap-5">
+-						{user && (
++						{userData && (
+ 							<>
+ 								<button onClick={becomeEducator}>
+ 									{isEducator ? "Educator Dashboard" : "Become Educator"}
+@@ -60,11 +65,11 @@ const Navbar = () => {
+ 						)}
+ 					</div>
+ 					<ThemeToggle />
+-					{user ? (
+-						<UserButton />
++					{userData ? (
++						<UserMenu />
+ 					) : (
+ 						<button
+-							onClick={() => openSignIn()}
++							onClick={() => navigate("/login")}
+ 							className="bg-blue-600 text-white px-5 py-2 rounded-full"
+ 						>
+ 							Create Account
+@@ -74,7 +79,7 @@ const Navbar = () => {
+ 				{/* For Mobile */}
+ 				<div className="md:hidden flex items-center gap-2 sm:gap-5 text-gray-500 dark:text-gray-300">
+ 					<div className="flex items-center gap-1 sm:gap-2 max-sm:text-xs">
+-						{user && (
++						{userData && (
+ 							<>
+ 								<button onClick={becomeEducator}>
+ 									{isEducator ? "Educator Dashboard" : "Become Educator"}
+@@ -84,10 +89,10 @@ const Navbar = () => {
+ 						)}
+ 					</div>
+ 					<ThemeToggle />
+-					{user ? (
+-						<UserButton />
++					{userData ? (
++						<UserMenu />
+ 					) : (
+-						<button onClick={() => openSignIn()}>
++						<button onClick={() => navigate("/login")}>
+ 							<img src={assets.user_icon} alt="" className="dark:invert" />
+ 						</button>
+ 					)}
+diff --git a/client/src/context/AppContextProvider.jsx b/client/src/context/AppContextProvider.jsx
+index b3b23c6..9f6cca1 100644
+--- a/client/src/context/AppContextProvider.jsx
++++ b/client/src/context/AppContextProvider.jsx
+@@ -1,9 +1,7 @@
+ import { useEffect, useState } from "react";
+ import { AppContext } from "./AppContext";
+-import { dummyCourses } from "../assets/assets";
+ import { useNavigate } from "react-router-dom";
+ import humanizeDuration from "humanize-duration";
+-import { useAuth, useUser } from "@clerk/react";
+ import axios from "axios";
+ import { toast } from "react-toastify";
+ 
+@@ -12,8 +10,11 @@ export const AppContextProvider = (props) => {
+ 	const currency = import.meta.env.VITE_CURRENCY;
+ 	const navigate = useNavigate();
+ 
+-	const { getToken } = useAuth();
+-	const { user } = useUser();
++	// JWT auth: token lives in localStorage so it survives a refresh. Kept as
++	// an async getToken() (like Clerk's) so every existing `await getToken()`
++	// call site across the app keeps working unchanged.
++	const [token, setToken] = useState(() => localStorage.getItem("token"));
++	const getToken = async () => token;
+ 
+ 	const [allCourses, setAllCourses] = useState([]);
+ 	const [coursesLoading, setCoursesLoading] = useState(true);
+@@ -56,26 +57,82 @@ export const AppContextProvider = (props) => {
+ 		}
+ 	};
+ 
+-	//Fetch user data
++	//Fetch the logged-in user's data (also doubles as "is this token still valid")
+ 	const fetchUserData = async () => {
+-		setIsEducator(user?.publicMetadata?.role === "educator");
+-
+ 		try {
+-			const token = await getToken();
+-
+-			const { data } = await axios.get(backendUrl + "/api/user/data", {
++			const { data } = await axios.get(backendUrl + "/api/auth/me", {
+ 				headers: { Authorization: `Bearer ${token}` },
+ 			});
+ 			if (data.success) {
+ 				setUserData(data.user);
++				setIsEducator(data.user.role === "educator" || data.user.role === "admin");
+ 			} else {
+ 				toast.error(data.message);
+ 			}
+ 		} catch (error) {
+-			toast.error(error.message);
++			if (error.response?.status === 401) {
++				// Token expired/invalid — clear the stale session quietly
++				logout();
++			} else {
++				toast.error(error.message);
++			}
+ 		}
+ 	};
+ 
++	// Register a new account
++	const register = async (name, email, password) => {
++		try {
++			const { data } = await axios.post(backendUrl + "/api/auth/register", {
++				name,
++				email,
++				password,
++			});
++			if (data.success) {
++				localStorage.setItem("token", data.token);
++				setToken(data.token);
++				setUserData(data.user);
++				setIsEducator(data.user.role === "educator" || data.user.role === "admin");
++				toast.success("Account created!");
++				return true;
++			}
++			toast.error(data.message);
++			return false;
++		} catch (error) {
++			toast.error(error.response?.data?.message || error.message);
++			return false;
++		}
++	};
++
++	// Log in with email + password
++	const login = async (email, password) => {
++		try {
++			const { data } = await axios.post(backendUrl + "/api/auth/login", { email, password });
++			if (data.success) {
++				localStorage.setItem("token", data.token);
++				setToken(data.token);
++				setUserData(data.user);
++				setIsEducator(data.user.role === "educator" || data.user.role === "admin");
++				toast.success("Welcome back!");
++				return true;
++			}
++			toast.error(data.message);
++			return false;
++		} catch (error) {
++			toast.error(error.response?.data?.message || error.message);
++			return false;
++		}
++	};
++
++	// Stateless JWT — logging out just means discarding the token client-side
++	const logout = () => {
++		localStorage.removeItem("token");
++		setToken(null);
++		setUserData(null);
++		setIsEducator(false);
++		setEnrolledCourses([]);
++		navigate("/");
++	};
++
+ 	//Fetch user enrolled courses
+ 	const fetchUserEnrolledCourses = async () => {
+ 		setEnrolledCoursesLoading(true);
+@@ -139,11 +196,11 @@ export const AppContextProvider = (props) => {
+ 	}, []);
+ 
+ 	useEffect(() => {
+-		if (user) {
++		if (token) {
+ 			fetchUserData();
+ 			fetchUserEnrolledCourses();
+ 		}
+-	}, [user]);
++	}, [token]);
+ 
+ 	const value = {
+ 		currency,
+@@ -168,6 +225,10 @@ export const AppContextProvider = (props) => {
+ 		fetchAllCourses,
+ 		isDarkMode,
+ 		toggleTheme,
++		token,
++		login,
++		register,
++		logout,
+ 	};
+ 
+ 	return <AppContext.Provider value={value}>{props.children}</AppContext.Provider>;
+diff --git a/client/src/main.jsx b/client/src/main.jsx
+index e3d264e..faa3bd4 100644
+--- a/client/src/main.jsx
++++ b/client/src/main.jsx
+@@ -4,19 +4,16 @@ import "./index.css";
+ import App from "./App.jsx";
+ import { AppContextProvider } from "./context/AppContextProvider.jsx";
+ import { BrowserRouter } from "react-router-dom";
+-import { ClerkProvider } from "@clerk/react";
+ import ErrorBoundary from "./components/ErrorBoundary.jsx";
+ 
+ createRoot(document.getElementById("root")).render(
+ 	<StrictMode>
+ 		<BrowserRouter>
+-			<ClerkProvider publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}>
+-				<ErrorBoundary>
+-					<AppContextProvider>
+-						<App />
+-					</AppContextProvider>
+-				</ErrorBoundary>
+-			</ClerkProvider>
++			<ErrorBoundary>
++				<AppContextProvider>
++					<App />
++				</AppContextProvider>
++			</ErrorBoundary>
+ 		</BrowserRouter>
+ 	</StrictMode>,
+ );
+diff --git a/client/src/pages/auth/Login.jsx b/client/src/pages/auth/Login.jsx
+new file mode 100644
+index 0000000..529b712
+--- /dev/null
++++ b/client/src/pages/auth/Login.jsx
+@@ -0,0 +1,68 @@
++import React, { useContext, useState } from "react";
++import { AppContext } from "../../context/AppContext";
++import { Link } from "react-router-dom";
++
++const Login = () => {
++	const { login, navigate } = useContext(AppContext);
++	const [email, setEmail] = useState("");
++	const [password, setPassword] = useState("");
++	const [submitting, setSubmitting] = useState(false);
++
++	const handleSubmit = async (e) => {
++		e.preventDefault();
++		setSubmitting(true);
++		const success = await login(email, password);
++		setSubmitting(false);
++		if (success) navigate("/");
++	};
++
++	return (
++		<div className="min-h-[80vh] flex items-center justify-center px-4">
++			<div className="w-full max-w-sm border border-gray-500/30 dark:border-gray-700 rounded-lg p-8 bg-white dark:bg-gray-800">
++				<h1 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-1">
++					Welcome back
++				</h1>
++				<p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
++					Log in to continue learning.
++				</p>
++				<form onSubmit={handleSubmit} className="space-y-4">
++					<div>
++						<label className="text-sm text-gray-600 dark:text-gray-300">Email</label>
++						<input
++							type="email"
++							required
++							value={email}
++							onChange={(e) => setEmail(e.target.value)}
++							className="mt-1 w-full border border-gray-500/30 dark:border-gray-600 bg-transparent rounded px-3 py-2 text-gray-800 dark:text-gray-100 outline-none focus:border-blue-500"
++						/>
++					</div>
++					<div>
++						<label className="text-sm text-gray-600 dark:text-gray-300">Password</label>
++						<input
++							type="password"
++							required
++							value={password}
++							onChange={(e) => setPassword(e.target.value)}
++							className="mt-1 w-full border border-gray-500/30 dark:border-gray-600 bg-transparent rounded px-3 py-2 text-gray-800 dark:text-gray-100 outline-none focus:border-blue-500"
++						/>
++					</div>
++					<button
++						type="submit"
++						disabled={submitting}
++						className="w-full bg-blue-600 text-white rounded py-2.5 font-medium hover:bg-blue-700 transition-colors disabled:opacity-60"
++					>
++						{submitting ? "Logging in..." : "Log In"}
++					</button>
++				</form>
++				<p className="text-sm text-gray-500 dark:text-gray-400 mt-6 text-center">
++					Don't have an account?{" "}
++					<Link to="/register" className="text-blue-600 dark:text-blue-400">
++						Sign up
++					</Link>
++				</p>
++			</div>
++		</div>
++	);
++};
++
++export default Login;
+diff --git a/client/src/pages/auth/Register.jsx b/client/src/pages/auth/Register.jsx
+new file mode 100644
+index 0000000..9626db6
+--- /dev/null
++++ b/client/src/pages/auth/Register.jsx
+@@ -0,0 +1,81 @@
++import React, { useContext, useState } from "react";
++import { AppContext } from "../../context/AppContext";
++import { Link } from "react-router-dom";
++
++const Register = () => {
++	const { register, navigate } = useContext(AppContext);
++	const [name, setName] = useState("");
++	const [email, setEmail] = useState("");
++	const [password, setPassword] = useState("");
++	const [submitting, setSubmitting] = useState(false);
++
++	const handleSubmit = async (e) => {
++		e.preventDefault();
++		setSubmitting(true);
++		const success = await register(name, email, password);
++		setSubmitting(false);
++		if (success) navigate("/");
++	};
++
++	return (
++		<div className="min-h-[80vh] flex items-center justify-center px-4">
++			<div className="w-full max-w-sm border border-gray-500/30 dark:border-gray-700 rounded-lg p-8 bg-white dark:bg-gray-800">
++				<h1 className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-1">
++					Create your account
++				</h1>
++				<p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
++					Start learning — or become an educator later from your profile.
++				</p>
++				<form onSubmit={handleSubmit} className="space-y-4">
++					<div>
++						<label className="text-sm text-gray-600 dark:text-gray-300">Name</label>
++						<input
++							type="text"
++							required
++							value={name}
++							onChange={(e) => setName(e.target.value)}
++							className="mt-1 w-full border border-gray-500/30 dark:border-gray-600 bg-transparent rounded px-3 py-2 text-gray-800 dark:text-gray-100 outline-none focus:border-blue-500"
++						/>
++					</div>
++					<div>
++						<label className="text-sm text-gray-600 dark:text-gray-300">Email</label>
++						<input
++							type="email"
++							required
++							value={email}
++							onChange={(e) => setEmail(e.target.value)}
++							className="mt-1 w-full border border-gray-500/30 dark:border-gray-600 bg-transparent rounded px-3 py-2 text-gray-800 dark:text-gray-100 outline-none focus:border-blue-500"
++						/>
++					</div>
++					<div>
++						<label className="text-sm text-gray-600 dark:text-gray-300">Password</label>
++						<input
++							type="password"
++							required
++							minLength={8}
++							value={password}
++							onChange={(e) => setPassword(e.target.value)}
++							className="mt-1 w-full border border-gray-500/30 dark:border-gray-600 bg-transparent rounded px-3 py-2 text-gray-800 dark:text-gray-100 outline-none focus:border-blue-500"
++						/>
++						<p className="text-xs text-gray-400 mt-1">At least 8 characters.</p>
++					</div>
++					<button
++						type="submit"
++						disabled={submitting}
++						className="w-full bg-blue-600 text-white rounded py-2.5 font-medium hover:bg-blue-700 transition-colors disabled:opacity-60"
++					>
++						{submitting ? "Creating account..." : "Create Account"}
++					</button>
++				</form>
++				<p className="text-sm text-gray-500 dark:text-gray-400 mt-6 text-center">
++					Already have an account?{" "}
++					<Link to="/login" className="text-blue-600 dark:text-blue-400">
++						Log in
++					</Link>
++				</p>
++			</div>
++		</div>
++	);
++};
++
++export default Register;
+diff --git a/server/configs/passport.js b/server/configs/passport.js
+new file mode 100644
+index 0000000..ce24292
+--- /dev/null
++++ b/server/configs/passport.js
+@@ -0,0 +1,53 @@
++import passport from "passport";
++import { Strategy as LocalStrategy } from "passport-local";
++import { Strategy as JwtStrategy, ExtractJwt } from "passport-jwt";
++import bcrypt from "bcryptjs";
++import User from "../models/User.js";
++
++// Local strategy: verifies email + password on login.
++// Used once, at /api/auth/login — everything after that is JWT-based.
++passport.use(
++	new LocalStrategy(
++		{ usernameField: "email", passwordField: "password" },
++		async (email, password, done) => {
++			try {
++				const user = await User.findOne({ email: email.toLowerCase() }).select("+password");
++				if (!user) {
++					return done(null, false, { message: "Invalid email or password" });
++				}
++
++				const isMatch = await bcrypt.compare(password, user.password);
++				if (!isMatch) {
++					return done(null, false, { message: "Invalid email or password" });
++				}
++
++				return done(null, user);
++			} catch (error) {
++				return done(error);
++			}
++		},
++	),
++);
++
++// JWT strategy: verifies the Bearer token on every protected route.
++// This is what replaces Clerk's req.auth() across the app.
++const jwtOptions = {
++	jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
++	secretOrKey: process.env.JWT_SECRET,
++};
++
++passport.use(
++	new JwtStrategy(jwtOptions, async (payload, done) => {
++		try {
++			const user = await User.findById(payload.id);
++			if (!user) {
++				return done(null, false);
++			}
++			return done(null, user);
++		} catch (error) {
++			return done(error, false);
++		}
++	}),
++);
++
++export default passport;
+diff --git a/server/controllers/authController.js b/server/controllers/authController.js
+new file mode 100644
+index 0000000..2ee0d65
+--- /dev/null
++++ b/server/controllers/authController.js
+@@ -0,0 +1,82 @@
++import bcrypt from "bcryptjs";
++import jwt from "jsonwebtoken";
++import passport from "../configs/passport.js";
++import User from "../models/User.js";
++
++const signToken = (user) =>
++	jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
++		expiresIn: "7d",
++	});
++
++// Never send the password hash back to the client
++const sanitizeUser = (user) => ({
++	_id: user._id,
++	name: user.name,
++	email: user.email,
++	role: user.role,
++	imageUrl: user.imageUrl,
++	enrolledCourses: user.enrolledCourses,
++	createdAt: user.createdAt,
++});
++
++// Register a new account (always starts as "student" — becomeEducator
++// upgrades the role later via a separate authenticated call)
++export const register = async (req, res) => {
++	try {
++		const { name, email, password } = req.body;
++
++		if (!name || !email || !password) {
++			return res.status(400).json({ success: false, message: "All fields are required" });
++		}
++		if (password.length < 8) {
++			return res
++				.status(400)
++				.json({ success: false, message: "Password must be at least 8 characters" });
++		}
++
++		const existing = await User.findOne({ email: email.toLowerCase() });
++		if (existing) {
++			return res.status(409).json({ success: false, message: "Email already registered" });
++		}
++
++		const hashedPassword = await bcrypt.hash(password, 12);
++		const user = await User.create({
++			name,
++			email: email.toLowerCase(),
++			password: hashedPassword,
++		});
++
++		const token = signToken(user);
++		res.status(201).json({ success: true, token, user: sanitizeUser(user) });
++	} catch (error) {
++		res.status(500).json({ success: false, message: error.message });
++	}
++};
++
++// Login with email + password, handled by the passport-local strategy
++export const login = (req, res, next) => {
++	passport.authenticate("local", { session: false }, (err, user, info) => {
++		if (err) return res.status(500).json({ success: false, message: err.message });
++		if (!user) {
++			return res
++				.status(401)
++				.json({ success: false, message: info?.message || "Invalid credentials" });
++		}
++
++		const token = signToken(user);
++		res.json({ success: true, token, user: sanitizeUser(user) });
++	})(req, res, next);
++};
++
++// Returns the currently authenticated user — req.user is populated by the
++// requireAuth middleware (passport-jwt) before this ever runs.
++export const getMe = async (req, res) => {
++	res.json({ success: true, user: sanitizeUser(req.user) });
++};
++
++// Stateless JWTs can't be revoked server-side without a blacklist/allowlist,
++// so logging out is really a client-side action (discard the token). This
++// endpoint exists for API symmetry and as a hook for adding a blacklist later.
++export const logout = (req, res) => {
++	res.json({ success: true, message: "Logged out" });
++};
+diff --git a/server/controllers/educatorController.js b/server/controllers/educatorController.js
+index 6baf6d8..7be1982 100644
+--- a/server/controllers/educatorController.js
++++ b/server/controllers/educatorController.js
+@@ -1,4 +1,3 @@
+-import { clerkClient } from "@clerk/express";
+ import Course from "../models/Course.js";
+ import { v2 as cloudinary } from "cloudinary";
+ import Purchase from "../models/Purchase.js";
+@@ -7,18 +6,8 @@ import User from "../models/User.js";
+ // Update role to educator
+ export const updateRoleToEducator = async (req, res) => {
+ 	try {
+-		const { userId } = await req.auth();
+-		if (!userId) {
+-			return res.status(401).json({
+-				success: false,
+-				message: "Unauthorized",
+-			});
+-		}
+-		await clerkClient.users.updateUserMetadata(userId, {
+-			publicMetadata: {
+-				role: "educator",
+-			},
+-		});
++		const userId = req.user.id;
++		await User.findByIdAndUpdate(userId, { role: "educator" });
+ 
+ 		res.json({ success: true, message: "You can publish course now" });
+ 	} catch (error) {
+@@ -34,8 +23,7 @@ export const addCourse = async (req, res) => {
+ 	try {
+ 		const { courseData } = req.body;
+ 		const imageFile = req.file;
+-		const { userId } = await req.auth();
+-		const educatorId = userId;
++		const educatorId = req.user.id;
+ 
+ 		if (!imageFile) {
+ 			return res.status(400).json({
+@@ -66,8 +54,7 @@ export const addCourse = async (req, res) => {
+ // Get educator courses
+ export const getEducatorCourses = async (req, res) => {
+ 	try {
+-		const { userId } = await req.auth();
+-		const educator = userId;
++		const educator = req.user.id;
+ 
+ 		const courses = await Course.find({ educator });
+ 		res.json({ success: true, courses });
+@@ -82,8 +69,7 @@ export const getEducatorCourses = async (req, res) => {
+ // Get educator dashboard data
+ export const educatorDashboardData = async (req, res) => {
+ 	try {
+-		const { userId } = await req.auth();
+-		const educator = userId;
++		const educator = req.user.id;
+ 		const courses = await Course.find({ educator });
+ 		const totalCourses = courses.length;
+ 
+@@ -134,8 +120,7 @@ export const educatorDashboardData = async (req, res) => {
+ // Get enrolled data with purchase data
+ export const getEnrolledStudentsData = async (req, res) => {
+ 	try {
+-		const { userId } = await req.auth();
+-		const educator = userId;
++		const educator = req.user.id;
+ 		const courses = await Course.find({ educator });
+ 		const courseIds = courses.map((course) => course._id);
+ 
+diff --git a/server/controllers/userController.js b/server/controllers/userController.js
+index 678ef0f..9d52424 100644
+--- a/server/controllers/userController.js
++++ b/server/controllers/userController.js
+@@ -7,7 +7,7 @@ import Stripe from "stripe";
+ // Get user data
+ export const getUserData = async (req, res) => {
+ 	try {
+-		const { userId } = await req.auth();
++		const userId = req.user.id;
+ 		const user = await User.findById(userId);
+ 
+ 		if (!user) {
+@@ -26,7 +26,7 @@ export const getUserData = async (req, res) => {
+ // User enrolled courses
+ export const userEnrolledCourses = async (req, res) => {
+ 	try {
+-		const { userId } = await req.auth();
++		const userId = req.user.id;
+ 		const user = await User.findById(userId).populate("enrolledCourses");
+ 
+ 		res.json({ success: true, enrolledCourses: user.enrolledCourses });
+@@ -43,7 +43,7 @@ export const purchaseCourse = async (req, res) => {
+ 	try {
+ 		const { courseId } = req.body;
+ 		const origin = req.headers.origin.replace(/\/$/, "");
+-		const { userId } = await req.auth();
++		const userId = req.user.id;
+ 		const userData = await User.findById(userId);
+ 		const courseData = await Course.findById(courseId);
+ 
+@@ -110,7 +110,7 @@ export const purchaseCourse = async (req, res) => {
+ // Update course progress
+ export const updateUserCourseProgress = async (req, res) => {
+ 	try {
+-		const { userId } = await req.auth();
++		const userId = req.user.id;
+ 		const { courseId, lectureId } = req.body;
+ 		const progressData = await CourseProgress.findOne({ userId, courseId });
+ 
+@@ -141,7 +141,7 @@ export const updateUserCourseProgress = async (req, res) => {
+ // Get course progress
+ export const getUserCourseProgress = async (req, res) => {
+ 	try {
+-		const { userId } = await req.auth();
++		const userId = req.user.id;
+ 		const { courseId } = req.body;
+ 		const progressData = await CourseProgress.findOne({ userId, courseId });
+ 		res.json({ success: true, progressData });
+@@ -155,7 +155,7 @@ export const getUserCourseProgress = async (req, res) => {
+ 
+ // Add rating to course
+ export const addUserRating = async (req, res) => {
+-	const { userId } = await req.auth();
++	const userId = req.user.id;
+ 	const { courseId, rating } = req.body;
+ 
+ 	if (!courseId || !userId || !rating || rating < 1 || rating > 5) {
+diff --git a/server/controllers/webhooks.js b/server/controllers/webhooks.js
+index ce90f0c..8cd3300 100644
+--- a/server/controllers/webhooks.js
++++ b/server/controllers/webhooks.js
+@@ -1,66 +1,8 @@
+-import { Webhook } from "svix";
+ import User from "../models/User.js";
+ import Stripe from "stripe";
+ import Purchase from "../models/Purchase.js";
+ import Course from "../models/Course.js";
+ 
+-export const clerkWebhooks = async (req, res) => {
+-	try {
+-		const whook = new Webhook(process.env.CLERK_WEBHOOK_SECRET);
+-		await whook.verify(req.body, {
+-			"svix-id": req.headers["svix-id"],
+-			"svix-timestamp": req.headers["svix-timestamp"],
+-			"svix-signature": req.headers["svix-signature"],
+-		});
+-
+-		const payload = JSON.parse(req.body.toString());
+-		const { data, type } = payload;
+-
+-		switch (type) {
+-			case "user.created": {
+-				const userData = {
+-					_id: data.id,
+-					email: data.email_addresses[0].email_address,
+-					name: `${data.first_name ?? ""} ${data.last_name ?? ""}`.trim(),
+-					imageUrl: data.image_url,
+-				};
+-				const createdUser = await User.create(userData);
+-				console.log("Created user:", createdUser);
+-
+-				return res.json({ success: true });
+-			}
+-
+-			case "user.updated": {
+-				const userData = {
+-					email: data.email_addresses[0].email_address,
+-					name: `${data.first_name ?? ""} ${data.last_name ?? ""}`.trim(),
+-					imageUrl: data.image_url,
+-				};
+-				await User.findByIdAndUpdate(data.id, userData);
+-				console.log("User updated:", userData);
+-
+-				return res.json({ success: true });
+-			}
+-
+-			case "user.deleted": {
+-				await User.findByIdAndDelete(data.id);
+-				console.log("User data deleted: ", data.id);
+-				return res.json({ success: true });
+-			}
+-
+-			default:
+-				break;
+-		}
+-	} catch (err) {
+-		console.error("Webhook Error:", err);
+-
+-		return res.status(500).json({
+-			success: false,
+-			message: err.message,
+-		});
+-	}
+-};
+-
+ const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
+ export const stripeWebhooks = async (req, res) => {
+ 	let event;
+diff --git a/server/middlewares/authMiddleware.js b/server/middlewares/authMiddleware.js
+index 86132ef..ce3fb6b 100644
+--- a/server/middlewares/authMiddleware.js
++++ b/server/middlewares/authMiddleware.js
+@@ -1,26 +1,20 @@
+-import { clerkClient } from "@clerk/express";
+-
+-// Middleware ( Protect Educator Routes )
+-export const protectEducator = async (req, res, next) => {
+-	try {
+-		const { userId } = await req.auth();
+-		if (!userId) {
+-			return res.status(401).json({
+-				success: false,
+-				message: "Unauthorized",
+-			});
+-		}
+-
+-		const user = await clerkClient.users.getUser(userId);
+-		if (user.publicMetadata.role !== "educator") {
+-			return res.status(403).json({
+-				success: false,
+-				message: "Unauthorized Access",
+-			});
+-		}
++import passport from "../configs/passport.js";
+ 
++// Verifies the JWT (via the passport-jwt strategy) and attaches the full
++// user document to req.user. Use on any route that requires a logged-in user.
++export const requireAuth = (req, res, next) => {
++	passport.authenticate("jwt", { session: false }, (err, user) => {
++		if (err) return res.status(500).json({ success: false, message: err.message });
++		if (!user) return res.status(401).json({ success: false, message: "Unauthorized" });
++		req.user = user;
+ 		next();
+-	} catch (error) {
+-		return res.json({ success: false, message: error.message });
++	})(req, res, next);
++};
++
++// Use *after* requireAuth to gate educator-only routes.
++export const requireEducator = (req, res, next) => {
++	if (!["educator", "admin"].includes(req.user.role)) {
++		return res.status(403).json({ success: false, message: "Unauthorized Access" });
+ 	}
++	next();
+ };
+diff --git a/server/models/User.js b/server/models/User.js
+index 48369ee..6e1fdf8 100644
+--- a/server/models/User.js
++++ b/server/models/User.js
+@@ -2,10 +2,15 @@ import mongoose from "mongoose";
+ 
+ const userSchema = new mongoose.Schema(
+ 	{
+-		_id: { type: String, required: true },
++		_id: {
++			type: String,
++			default: () => new mongoose.Types.ObjectId().toString(),
++		},
+ 		name: { type: String, required: true },
+-		email: { type: String, required: true },
+-		imageUrl: { type: String, required: true },
++		email: { type: String, required: true, unique: true, lowercase: true, trim: true },
++		password: { type: String, required: true, select: false },
++		role: { type: String, enum: ["student", "educator", "admin"], default: "student" },
++		imageUrl: { type: String, default: "" },
+ 		enrolledCourses: [
+ 			{
+ 				type: mongoose.Schema.Types.ObjectId,
+diff --git a/server/package.json b/server/package.json
+index 3645589..04cef69 100644
+--- a/server/package.json
++++ b/server/package.json
+@@ -10,15 +10,19 @@
+ 	"keywords": [],
+ 	"type": "module",
+ 	"dependencies": {
+-		"@clerk/express": "^2.1.49",
++		"bcryptjs": "^2.4.3",
+ 		"cloudinary": "^2.10.0",
+ 		"cors": "^2.8.6",
+ 		"dotenv": "^17.4.2",
+ 		"express": "^5.2.1",
++		"express-rate-limit": "^7.4.0",
++		"jsonwebtoken": "^9.0.2",
+ 		"mongoose": "^9.9.1",
+ 		"multer": "^2.2.0",
+ 		"nodemon": "^3.1.14",
+-		"stripe": "^22.4.0",
+-		"svix": "^1.99.1"
++		"passport": "^0.7.0",
++		"passport-jwt": "^4.0.1",
++		"passport-local": "^1.0.0",
++		"stripe": "^22.4.0"
+ 	}
+ }
+diff --git a/server/routes/authRoutes.js b/server/routes/authRoutes.js
+new file mode 100644
+index 0000000..12e9eb3
+--- /dev/null
++++ b/server/routes/authRoutes.js
+@@ -0,0 +1,22 @@
++import express from "express";
++import rateLimit from "express-rate-limit";
++import { register, login, getMe, logout } from "../controllers/authController.js";
++import { requireAuth } from "../middlewares/authMiddleware.js";
++
++const authRouter = express.Router();
++
++// Basic brute-force protection on credential endpoints
++const authLimiter = rateLimit({
++	windowMs: 15 * 60 * 1000,
++	limit: 20,
++	standardHeaders: true,
++	legacyHeaders: false,
++	message: { success: false, message: "Too many attempts, please try again later" },
++});
++
++authRouter.post("/register", authLimiter, register);
++authRouter.post("/login", authLimiter, login);
++authRouter.get("/me", requireAuth, getMe);
++authRouter.post("/logout", requireAuth, logout);
++
++export default authRouter;
+diff --git a/server/routes/educatorRoutes.js b/server/routes/educatorRoutes.js
+index 657d769..2a2c7d0 100644
+--- a/server/routes/educatorRoutes.js
++++ b/server/routes/educatorRoutes.js
+@@ -7,15 +7,21 @@ import {
+ 	updateRoleToEducator,
+ } from "../controllers/educatorController.js";
+ import upload from "../configs/multer.js";
+-import { protectEducator } from "../middlewares/authMiddleware.js";
++import { requireAuth, requireEducator } from "../middlewares/authMiddleware.js";
+ 
+ const educatorRouter = express.Router();
+ 
+-// Add educator role
+-educatorRouter.get("/update-role", updateRoleToEducator);
+-educatorRouter.post("/add-course", upload.single("image"), protectEducator, addCourse);
+-educatorRouter.get("/courses", protectEducator, getEducatorCourses);
+-educatorRouter.get("/dashboard", protectEducator, educatorDashboardData);
+-educatorRouter.get("/enrolled-students", protectEducator, getEnrolledStudentsData);
++// Any logged-in user can request to become an educator
++educatorRouter.get("/update-role", requireAuth, updateRoleToEducator);
++educatorRouter.post(
++	"/add-course",
++	requireAuth,
++	requireEducator,
++	upload.single("image"),
++	addCourse,
++);
++educatorRouter.get("/courses", requireAuth, requireEducator, getEducatorCourses);
++educatorRouter.get("/dashboard", requireAuth, requireEducator, educatorDashboardData);
++educatorRouter.get("/enrolled-students", requireAuth, requireEducator, getEnrolledStudentsData);
+ 
+ export default educatorRouter;
+diff --git a/server/routes/userRoutes.js b/server/routes/userRoutes.js
+index 53f77ae..1208279 100644
+--- a/server/routes/userRoutes.js
++++ b/server/routes/userRoutes.js
+@@ -7,15 +7,16 @@ import {
+ 	updateUserCourseProgress,
+ 	userEnrolledCourses,
+ } from "../controllers/userController.js";
++import { requireAuth } from "../middlewares/authMiddleware.js";
+ 
+ const userRouter = express.Router();
+ 
+-userRouter.get("/data", getUserData);
+-userRouter.get("/enrolled-courses", userEnrolledCourses);
+-userRouter.post("/purchase", purchaseCourse);
++userRouter.get("/data", requireAuth, getUserData);
++userRouter.get("/enrolled-courses", requireAuth, userEnrolledCourses);
++userRouter.post("/purchase", requireAuth, purchaseCourse);
+ 
+-userRouter.post("/update-course-progress", updateUserCourseProgress);
+-userRouter.post("/get-course-progress", getUserCourseProgress);
+-userRouter.post("/add-rating", addUserRating);
++userRouter.post("/update-course-progress", requireAuth, updateUserCourseProgress);
++userRouter.post("/get-course-progress", requireAuth, getUserCourseProgress);
++userRouter.post("/add-rating", requireAuth, addUserRating);
+ 
+ export default userRouter;
+diff --git a/server/server.js b/server/server.js
+index ff937cd..2fe2515 100644
+--- a/server/server.js
++++ b/server/server.js
+@@ -2,12 +2,13 @@ import express from "express";
+ import cors from "cors";
+ import "dotenv/config";
+ import connectDB from "./configs/mongodb.js";
+-import { clerkWebhooks, stripeWebhooks } from "./controllers/webhooks.js";
++import { stripeWebhooks } from "./controllers/webhooks.js";
+ import educatorRouter from "./routes/educatorRoutes.js";
+-import { clerkMiddleware } from "@clerk/express";
+ import connectCloudinary from "./configs/cloudinary.js";
+ import courseRouter from "./routes/courseRoutes.js";
+ import userRouter from "./routes/userRoutes.js";
++import authRouter from "./routes/authRoutes.js";
++import passport from "./configs/passport.js";
+ 
+ // Initalize
+ const app = express();
+@@ -19,18 +20,18 @@ await connectCloudinary();
+ 
+ // Middlewares
+ app.use(cors());
+-app.use(clerkMiddleware());
++app.use(passport.initialize());
+ 
+ app.get("/", (req, res) => {
+ 	res.send("API Working");
+ });
+ 
+-app.post("/clerk", express.raw({ type: "application/json" }), clerkWebhooks);
+ app.post("/stripe", express.raw({ type: "application/json" }), stripeWebhooks);
+ 
+ app.use(express.json());
+ 
+ // Routes
++app.use("/api/auth", authRouter);
+ app.use("/api/educator", educatorRouter);
+ app.use("/api/course", courseRouter);
+ app.use("/api/user", userRouter);

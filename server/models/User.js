@@ -2,10 +2,15 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
 	{
-		_id: { type: String, required: true },
+		_id: {
+			type: String,
+			default: () => new mongoose.Types.ObjectId().toString(),
+		},
 		name: { type: String, required: true },
-		email: { type: String, required: true },
-		imageUrl: { type: String, required: true },
+		email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+		password: { type: String, required: true, select: false },
+		role: { type: String, enum: ["student", "educator", "admin"], default: "student" },
+		imageUrl: { type: String, default: "" },
 		enrolledCourses: [
 			{
 				type: mongoose.Schema.Types.ObjectId,

@@ -7,7 +7,7 @@ import Stripe from "stripe";
 // Get user data
 export const getUserData = async (req, res) => {
 	try {
-		const { userId } = await req.auth();
+		const userId = req.user.id;
 		const user = await User.findById(userId);
 
 		if (!user) {
@@ -26,7 +26,7 @@ export const getUserData = async (req, res) => {
 // User enrolled courses
 export const userEnrolledCourses = async (req, res) => {
 	try {
-		const { userId } = await req.auth();
+		const userId = req.user.id;
 		const user = await User.findById(userId).populate("enrolledCourses");
 
 		res.json({ success: true, enrolledCourses: user.enrolledCourses });
@@ -43,7 +43,7 @@ export const purchaseCourse = async (req, res) => {
 	try {
 		const { courseId } = req.body;
 		const origin = req.headers.origin.replace(/\/$/, "");
-		const { userId } = await req.auth();
+		const userId = req.user.id;
 		const userData = await User.findById(userId);
 		const courseData = await Course.findById(courseId);
 
@@ -110,7 +110,7 @@ export const purchaseCourse = async (req, res) => {
 // Update course progress
 export const updateUserCourseProgress = async (req, res) => {
 	try {
-		const { userId } = await req.auth();
+		const userId = req.user.id;
 		const { courseId, lectureId } = req.body;
 		const progressData = await CourseProgress.findOne({ userId, courseId });
 
@@ -141,7 +141,7 @@ export const updateUserCourseProgress = async (req, res) => {
 // Get course progress
 export const getUserCourseProgress = async (req, res) => {
 	try {
-		const { userId } = await req.auth();
+		const userId = req.user.id;
 		const { courseId } = req.body;
 		const progressData = await CourseProgress.findOne({ userId, courseId });
 		res.json({ success: true, progressData });
@@ -155,7 +155,7 @@ export const getUserCourseProgress = async (req, res) => {
 
 // Add rating to course
 export const addUserRating = async (req, res) => {
-	const { userId } = await req.auth();
+	const userId = req.user.id;
 	const { courseId, rating } = req.body;
 
 	if (!courseId || !userId || !rating || rating < 1 || rating > 5) {
