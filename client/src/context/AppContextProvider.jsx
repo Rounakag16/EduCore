@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { AppContext } from "./AppContext";
-import { dummyCourses } from "../assets/assets";
 import { useNavigate } from "react-router-dom";
 import humanizeDuration from "humanize-duration";
-import { useAuth, useUser } from "@clerk/react";
 import axios from "axios";
 import { toast } from "react-toastify";
 
@@ -12,8 +10,11 @@ export const AppContextProvider = (props) => {
 	const currency = import.meta.env.VITE_CURRENCY;
 	const navigate = useNavigate();
 
-	const { getToken } = useAuth();
-	const { user } = useUser();
+	// JWT auth: token lives in localStorage so it survives a refresh. Kept as
+	// an async getToken() (like Clerk's) so every existing `await getToken()`
+	// call site across the app keeps working unchanged.
+	const [token, setToken] = useState(() => localStorage.getItem("token"));
+	const getToken = async () => token;
 
 	const [allCourses, setAllCourses] = useState([]);
 	const [coursesLoading, setCoursesLoading] = useState(true);
@@ -56,24 +57,80 @@ export const AppContextProvider = (props) => {
 		}
 	};
 
-	//Fetch user data
+	//Fetch the logged-in user's data (also doubles as "is this token still valid")
 	const fetchUserData = async () => {
-		setIsEducator(user?.publicMetadata?.role === "educator");
-
 		try {
-			const token = await getToken();
-
-			const { data } = await axios.get(backendUrl + "/api/user/data", {
+			const { data } = await axios.get(backendUrl + "/api/auth/me", {
 				headers: { Authorization: `Bearer ${token}` },
 			});
 			if (data.success) {
 				setUserData(data.user);
+				setIsEducator(data.user.role === "educator" || data.user.role === "admin");
 			} else {
 				toast.error(data.message);
 			}
 		} catch (error) {
-			toast.error(error.message);
+			if (error.response?.status === 401) {
+				// Token expired/invalid — clear the stale session quietly
+				logout();
+			} else {
+				toast.error(error.message);
+			}
 		}
+	};
+
+	// Register a new account
+	const register = async (name, email, password) => {
+		try {
+			const { data } = await axios.post(backendUrl + "/api/auth/register", {
+				name,
+				email,
+				password,
+			});
+			if (data.success) {
+				localStorage.setItem("token", data.token);
+				setToken(data.token);
+				setUserData(data.user);
+				setIsEducator(data.user.role === "educator" || data.user.role === "admin");
+				toast.success("Account created!");
+				return true;
+			}
+			toast.error(data.message);
+			return false;
+		} catch (error) {
+			toast.error(error.response?.data?.message || error.message);
+			return false;
+		}
+	};
+
+	// Log in with email + password
+	const login = async (email, password) => {
+		try {
+			const { data } = await axios.post(backendUrl + "/api/auth/login", { email, password });
+			if (data.success) {
+				localStorage.setItem("token", data.token);
+				setToken(data.token);
+				setUserData(data.user);
+				setIsEducator(data.user.role === "educator" || data.user.role === "admin");
+				toast.success("Welcome back!");
+				return true;
+			}
+			toast.error(data.message);
+			return false;
+		} catch (error) {
+			toast.error(error.response?.data?.message || error.message);
+			return false;
+		}
+	};
+
+	// Stateless JWT — logging out just means discarding the token client-side
+	const logout = () => {
+		localStorage.removeItem("token");
+		setToken(null);
+		setUserData(null);
+		setIsEducator(false);
+		setEnrolledCourses([]);
+		navigate("/");
 	};
 
 	//Fetch user enrolled courses
@@ -139,11 +196,11 @@ export const AppContextProvider = (props) => {
 	}, []);
 
 	useEffect(() => {
-		if (user) {
+		if (token) {
 			fetchUserData();
 			fetchUserEnrolledCourses();
 		}
-	}, [user]);
+	}, [token]);
 
 	const value = {
 		currency,
@@ -168,6 +225,10 @@ export const AppContextProvider = (props) => {
 		fetchAllCourses,
 		isDarkMode,
 		toggleTheme,
+		token,
+		login,
+		register,
+		logout,
 	};
 
 	return <AppContext.Provider value={value}>{props.children}</AppContext.Provider>;

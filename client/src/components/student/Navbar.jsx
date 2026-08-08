@@ -1,18 +1,23 @@
 import React, { useContext } from "react";
 import { assets } from "../../assets/assets";
 import { Link } from "react-router-dom";
-import { useClerk, UserButton, useUser } from "@clerk/react";
 import { AppContext } from "../../context/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
 import ThemeToggle from "../ThemeToggle";
+import UserMenu from "../UserMenu";
 
 const Navbar = () => {
 	const isCourseListPage = location.pathname.includes("/course-list");
-	const { openSignIn } = useClerk();
-	const { user } = useUser();
-	const { navigate, isEducator, setIsEducator, backendUrl, getToken, isDarkMode } =
-		useContext(AppContext);
+	const {
+		navigate,
+		isEducator,
+		setIsEducator,
+		backendUrl,
+		getToken,
+		isDarkMode,
+		userData,
+	} = useContext(AppContext);
 
 	const becomeEducator = async () => {
 		try {
@@ -50,7 +55,7 @@ const Navbar = () => {
 				/>
 				<div className="hidden md:flex items-center gap-5 text-gray-500 dark:text-gray-300">
 					<div className="flex items-center gap-5">
-						{user && (
+						{userData && (
 							<>
 								<button onClick={becomeEducator}>
 									{isEducator ? "Educator Dashboard" : "Become Educator"}
@@ -60,11 +65,11 @@ const Navbar = () => {
 						)}
 					</div>
 					<ThemeToggle />
-					{user ? (
-						<UserButton />
+					{userData ? (
+						<UserMenu />
 					) : (
 						<button
-							onClick={() => openSignIn()}
+							onClick={() => navigate("/login")}
 							className="bg-blue-600 text-white px-5 py-2 rounded-full"
 						>
 							Create Account
@@ -74,7 +79,7 @@ const Navbar = () => {
 				{/* For Mobile */}
 				<div className="md:hidden flex items-center gap-2 sm:gap-5 text-gray-500 dark:text-gray-300">
 					<div className="flex items-center gap-1 sm:gap-2 max-sm:text-xs">
-						{user && (
+						{userData && (
 							<>
 								<button onClick={becomeEducator}>
 									{isEducator ? "Educator Dashboard" : "Become Educator"}
@@ -84,10 +89,10 @@ const Navbar = () => {
 						)}
 					</div>
 					<ThemeToggle />
-					{user ? (
-						<UserButton />
+					{userData ? (
+						<UserMenu />
 					) : (
-						<button onClick={() => openSignIn()}>
+						<button onClick={() => navigate("/login")}>
 							<img src={assets.user_icon} alt="" className="dark:invert" />
 						</button>
 					)}

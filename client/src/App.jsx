@@ -13,6 +13,9 @@ import MyCourses from "./pages/educator/MyCourses";
 import StudentsEnrolled from "./pages/educator/StudentsEnrolled";
 import Navbar from "./components/student/Navbar";
 import Footer from "./components/student/Footer";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import ProtectedRoute from "./components/ProtectedRoute";
 import "quill/dist/quill.snow.css";
 import { ToastContainer } from "react-toastify";
 
@@ -28,11 +31,34 @@ const App = () => {
 				<Route path="/course-list" element={<CoursesList />} />
 				<Route path="/course-list/:input" element={<CoursesList />} />
 				<Route path="/course/:id" element={<CourseDetails />} />
-				<Route path="/my-enrollments" element={<MyEnrollments />} />
-				<Route path="/player/:courseId" element={<Player />} />
+				<Route path="/login" element={<Login />} />
+				<Route path="/register" element={<Register />} />
+				<Route
+					path="/my-enrollments"
+					element={
+						<ProtectedRoute>
+							<MyEnrollments />
+						</ProtectedRoute>
+					}
+				/>
+				<Route
+					path="/player/:courseId"
+					element={
+						<ProtectedRoute>
+							<Player />
+						</ProtectedRoute>
+					}
+				/>
 				<Route path="/loading/:path" element={<Loading />} />
 
-				<Route path="/educator" element={<Educator />}>
+				<Route
+					path="/educator"
+					element={
+						<ProtectedRoute requireEducator>
+							<Educator />
+						</ProtectedRoute>
+					}
+				>
 					<Route index element={<Dashboard />} />
 					<Route path="add-course" element={<AddCourse />} />
 					<Route path="my-courses" element={<MyCourses />} />

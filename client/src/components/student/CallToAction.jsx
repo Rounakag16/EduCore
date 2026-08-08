@@ -1,18 +1,15 @@
 import React, { useContext } from "react";
 import { assets } from "../../assets/assets";
-import { useClerk, useUser } from "@clerk/react";
 import { AppContext } from "../../context/AppContext";
 
 const CallToAction = () => {
-	const { navigate } = useContext(AppContext);
-	const { user } = useUser();
-	const { openSignIn } = useClerk();
+	const { navigate, userData } = useContext(AppContext);
 
 	const handleGetStarted = () => {
-		if (user) {
+		if (userData) {
 			navigate("/course-list");
 		} else {
-			openSignIn();
+			navigate("/register");
 		}
 	};
 
