@@ -241,7 +241,9 @@ const Player = () => {
 						<div>
 							{getYoutubeId(playerData.lectureUrl) ? (
 								<YouTube
+									key={getYoutubeId(playerData.lectureUrl)}
 									videoId={getYoutubeId(playerData.lectureUrl)}
+									opts={{ playerVars: { autoplay: 0 } }}
 									iframeClassName="w-full aspect-video"
 								/>
 							) : (

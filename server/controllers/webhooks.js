@@ -11,40 +11,52 @@ const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
 // a payment can trigger both checkout.session.completed AND
 // payment_intent.succeeded).
 const completePurchase = async (purchaseId) => {
+	console.log(`[webhook] completePurchase called for purchaseId=${purchaseId}`);
+
 	if (!purchaseId) {
-		console.error("Webhook: no purchaseId in event metadata");
+		console.error("[webhook] ABORTED: no purchaseId in event metadata");
 		return;
 	}
 
 	const purchaseData = await Purchase.findById(purchaseId);
 	if (!purchaseData) {
-		console.error(`Webhook: no Purchase found for id ${purchaseId}`);
+		console.error(`[webhook] ABORTED: no Purchase document found for id ${purchaseId}`);
 		return;
 	}
+	console.log(`[webhook] Purchase found, current status="${purchaseData.status}"`);
+
 	if (purchaseData.status === "completed") {
-		return; // already processed by an earlier/duplicate event
+		console.log("[webhook] Already completed — skipping (idempotent, this is normal on retries)");
+		return;
 	}
 
 	const userData = await User.findById(purchaseData.userId);
 	const courseData = await Course.findById(purchaseData.courseId.toString());
 
-	if (!userData || !courseData) {
-		console.error(`Webhook: user or course missing for purchase ${purchaseId}`);
+	if (!userData) {
+		console.error(`[webhook] ABORTED: no User found for id ${purchaseData.userId}`);
+		return;
+	}
+	if (!courseData) {
+		console.error(`[webhook] ABORTED: no Course found for id ${purchaseData.courseId}`);
 		return;
 	}
 
 	if (!courseData.enrolledStudents.includes(userData._id)) {
 		courseData.enrolledStudents.push(userData._id);
 		await courseData.save();
+		console.log(`[webhook] Added ${userData._id} to Course.enrolledStudents`);
 	}
 
 	if (!userData.enrolledCourses.includes(courseData._id)) {
 		userData.enrolledCourses.push(courseData._id);
 		await userData.save();
+		console.log(`[webhook] Added ${courseData._id} to User.enrolledCourses`);
 	}
 
 	purchaseData.status = "completed";
 	await purchaseData.save();
+	console.log(`[webhook] Purchase ${purchaseId} marked completed ✅`);
 };
 
 const failPurchase = async (purchaseId) => {
@@ -69,9 +81,16 @@ export const stripeWebhooks = async (req, res) => {
 	try {
 		event = stripeInstance.webhooks.constructEvent(req.body, signature, endpointSecret);
 	} catch (err) {
-		console.log(`Webhook signature verification failed.`, err.message);
+		console.log(`[webhook] Signature verification FAILED:`, err.message);
+		console.log(
+			"[webhook] This almost always means STRIPE_WEBHOOK_SECRET doesn't match the endpoint " +
+				"that actually sent this request (e.g. using the Dashboard's secret while testing via " +
+				"`stripe listen`, which issues its own separate secret — or vice versa).",
+		);
 		return res.sendStatus(400);
 	}
+
+	console.log(`[webhook] Received event: ${event.type} (id: ${event.id})`);
 
 	try {
 		switch (event.type) {
