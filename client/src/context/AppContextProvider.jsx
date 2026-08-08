@@ -24,21 +24,6 @@ export const AppContextProvider = (props) => {
 	const [enrolledCoursesLoading, setEnrolledCoursesLoading] = useState(false);
 	const [userData, setUserData] = useState(null);
 
-	// Dark mode: persisted in localStorage, applied as a class on <html> so
-	// Tailwind's `dark:` variant (see the @custom-variant in index.css) works.
-	const [isDarkMode, setIsDarkMode] = useState(() => {
-		const stored = localStorage.getItem("theme");
-		if (stored) return stored === "dark";
-		return window.matchMedia("(prefers-color-scheme: dark)").matches;
-	});
-
-	const toggleTheme = () => setIsDarkMode((prev) => !prev);
-
-	useEffect(() => {
-		document.documentElement.classList.toggle("dark", isDarkMode);
-		localStorage.setItem("theme", isDarkMode ? "dark" : "light");
-	}, [isDarkMode]);
-
 	//Fetch all courses
 	const fetchAllCourses = async () => {
 		setCoursesLoading(true);
@@ -223,8 +208,6 @@ export const AppContextProvider = (props) => {
 		setUserData,
 		getToken,
 		fetchAllCourses,
-		isDarkMode,
-		toggleTheme,
 		token,
 		login,
 		register,

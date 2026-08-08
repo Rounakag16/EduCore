@@ -23,7 +23,7 @@ const App = () => {
 	const isEducatorRoute = useMatch("/educator/*");
 
 	return (
-		<div className="text-default min-h-screen bg-white dark:bg-gray-900 transition-colors">
+		<div className="text-default min-h-screen bg-white">
 			<ToastContainer />
 			{!isEducatorRoute && <Navbar />}
 			<Routes>

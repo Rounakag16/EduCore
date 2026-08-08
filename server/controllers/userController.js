@@ -3,6 +3,7 @@ import CourseProgress from "../models/CourseProgress.js";
 import Purchase from "../models/Purchase.js";
 import User from "../models/User.js";
 import Stripe from "stripe";
+import { v2 as cloudinary } from "cloudinary";
 
 // Get user data
 export const getUserData = async (req, res) => {
@@ -15,6 +16,36 @@ export const getUserData = async (req, res) => {
 		}
 
 		res.json({ success: true, user });
+	} catch (error) {
+		return res.status(500).json({
+			success: false,
+			message: error.message,
+		});
+	}
+};
+
+// Update profile picture — falls back to the default avatar client-side if
+// imageUrl is empty, so this is purely opt-in.
+export const updateProfileImage = async (req, res) => {
+	try {
+		const userId = req.user.id;
+		const imageFile = req.file;
+
+		if (!imageFile) {
+			return res.status(400).json({ success: false, message: "No image uploaded" });
+		}
+
+		const imageUpload = await cloudinary.uploader.upload(imageFile.path, {
+			folder: "profile-images",
+		});
+
+		const user = await User.findByIdAndUpdate(
+			userId,
+			{ imageUrl: imageUpload.secure_url },
+			{ new: true },
+		);
+
+		res.json({ success: true, message: "Profile picture updated", user });
 	} catch (error) {
 		return res.status(500).json({
 			success: false,

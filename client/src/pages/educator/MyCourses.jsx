@@ -38,11 +38,11 @@ const MyCourses = () => {
 	return (
 		<div className="h-screen flex flex-col items-start justify-between md:p-8 md:pb-0 p-4 pt-8 pb-0">
 			<div className="w-full">
-				<h1 className="pb-4 text-lg font-medium text-gray-800 dark:text-gray-100">
+				<h1 className="pb-4 text-lg font-medium text-gray-800">
 					My Courses Page
 				</h1>
 				{!loading && courses && courses.length === 0 ? (
-					<div className="max-w-4xl w-full rounded-md bg-white dark:bg-gray-800 border border-gray-500/20 dark:border-gray-700">
+					<div className="max-w-4xl w-full rounded-md bg-white border border-gray-500/20">
 						<EmptyState
 							title="No courses yet"
 							subtitle="Create your first course to start teaching and earning."
@@ -51,9 +51,9 @@ const MyCourses = () => {
 						/>
 					</div>
 				) : (
-					<div className="flex flex-col items-center max-w-4xl w-full overflow-hidden rounded-md bg-white dark:bg-gray-800 border border-gray-500/20 dark:border-gray-700">
+					<div className="flex flex-col items-center max-w-4xl w-full overflow-hidden rounded-md bg-white border border-gray-500/20">
 						<table className="table-fixed md:table-auto w-full overflow-hidden">
-							<thead className="text-gray-900 dark:text-gray-100 border-b border-gray-500/20 dark:border-gray-700 text-sm text-left">
+							<thead className="text-gray-900 border-b border-gray-500/20 text-sm text-left">
 								<tr>
 									<th className="px-4 py-3 font-semibold truncate">All Courses</th>
 									<th className="px-4 py-3 font-semibold truncate">Earnings</th>
@@ -61,14 +61,14 @@ const MyCourses = () => {
 									<th className="px-4 py-3 font-semibold truncate">Published On</th>
 								</tr>
 							</thead>
-							<tbody className="text-sm text-gray-500 dark:text-gray-400">
+							<tbody className="text-sm text-gray-500">
 								{loading ? (
 									<SkeletonTable rows={5} columns={4} />
 								) : (
 									courses.map((course) => (
 										<tr
 											key={course._id}
-											className="border-b border-gray-500/20 dark:border-gray-700"
+											className="border-b border-gray-500/20"
 										>
 											<td className="md:px-4 pl-2 md:pl-4 py-3 flex items-center space-x-3 truncate">
 												<img

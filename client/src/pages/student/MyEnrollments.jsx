@@ -59,7 +59,7 @@ const MyEnrollments = () => {
 	return (
 		<>
 			<div className="md:px-36 px-8 pt-10">
-				<h1 className="text-2xl font-semibold text-gray-800 dark:text-gray-100">
+				<h1 className="text-2xl font-semibold text-gray-800">
 					My Enrollments
 				</h1>
 				{!enrolledCoursesLoading && enrolledCourses.length === 0 ? (
@@ -71,8 +71,8 @@ const MyEnrollments = () => {
 						onAction={() => navigate("/course-list")}
 					/>
 				) : (
-					<table className="md:table-auto table-fixed w-full overflow-hidden border border-gray-500/20 dark:border-gray-700 mt-10">
-						<thead className="text-gray-900 dark:text-gray-100 border-b border-gray-500/20 dark:border-gray-700 text-sm text-left max-sm:hidden">
+					<table className="md:table-auto table-fixed w-full overflow-hidden border border-gray-500/20 mt-10">
+						<thead className="text-gray-900 border-b border-gray-500/20 text-sm text-left max-sm:hidden">
 							<tr>
 								<th className="px-4 py-3 font-semibold truncate">Course</th>
 								<th className="px-4 py-3 font-semibold truncate">Duration</th>
@@ -80,12 +80,12 @@ const MyEnrollments = () => {
 								<th className="px-4 py-3 font-semibold truncate">Status</th>
 							</tr>
 						</thead>
-						<tbody className="text-gray-700 dark:text-gray-300">
+						<tbody className="text-gray-700">
 							{enrolledCoursesLoading ? (
 								<SkeletonTable rows={4} columns={4} />
 							) : (
 								enrolledCourses.map((course, index) => (
-									<tr key={index} className="border-b border-gray-500/20 dark:border-gray-700">
+									<tr key={index} className="border-b border-gray-500/20">
 										<td className="md:px-4 pl-2 md:pl-4 py-3 flex items-center space-x-3">
 											<img
 												src={course.courseThumbnail}
@@ -103,7 +103,7 @@ const MyEnrollments = () => {
 																100
 															: 0
 													}
-													className="bg-gray-300 dark:bg-gray-700 rounded-full"
+													className="bg-gray-300 rounded-full"
 												/>
 											</div>
 										</td>

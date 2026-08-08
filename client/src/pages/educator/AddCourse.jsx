@@ -10,7 +10,7 @@ const AddCourse = () => {
 	const quillRef = useRef(null);
 	const editorRef = useRef(null);
 
-	const { backendUrl, getToken } = useContext(AppContext);
+	const { backendUrl, getToken, fetchAllCourses } = useContext(AppContext);
 
 	const [courseTitle, setCourseTitle] = useState("");
 	const [coursePrice, setCoursePrice] = useState(0);
@@ -122,6 +122,7 @@ const AddCourse = () => {
 				setImage(null);
 				setChapters([]);
 				quillRef.current.root.innerHTML = "";
+				fetchAllCourses();
 			} else {
 				toast.error(data.message);
 			}

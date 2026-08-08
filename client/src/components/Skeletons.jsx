@@ -2,7 +2,7 @@ import React from "react";
 
 // Matches the layout of CourseCard so the grid doesn't jump when real data arrives
 export const SkeletonCourseCard = () => (
-	<div className="border border-gray-500/30 dark:border-gray-700 pb-6 overflow-hidden rounded-lg">
+	<div className="border border-gray-500/30 pb-6 overflow-hidden rounded-lg">
 		<div className="skeleton w-full aspect-video" />
 		<div className="p-3 text-left space-y-2">
 			<div className="skeleton h-4 w-3/4 rounded" />
@@ -42,7 +42,7 @@ export const SkeletonTable = ({ rows = 5, columns = 4 }) => (
 
 // Stat-card skeleton for the educator dashboard
 export const SkeletonStatCard = () => (
-	<div className="flex items-center gap-3 shadow-card border border-blue-500/40 dark:border-blue-500/20 p-3 w-56 rounded-md">
+	<div className="flex items-center gap-3 shadow-card border border-blue-500/40 p-3 w-56 rounded-md">
 		<div className="skeleton w-8 h-8 rounded-full shrink-0" />
 		<div className="space-y-2 w-full">
 			<div className="skeleton h-5 w-16 rounded" />

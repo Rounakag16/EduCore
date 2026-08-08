@@ -26,12 +26,12 @@ class ErrorBoundary extends React.Component {
 	render() {
 		if (this.state.hasError) {
 			return (
-				<div className="min-h-screen flex items-center justify-center bg-white dark:bg-gray-900 px-6">
+				<div className="min-h-screen flex items-center justify-center bg-white px-6">
 					<div className="text-center max-w-md">
-						<h1 className="text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-3">
+						<h1 className="text-3xl font-semibold text-gray-800 mb-3">
 							Something went wrong
 						</h1>
-						<p className="text-gray-500 dark:text-gray-400 mb-6">
+						<p className="text-gray-500 mb-6">
 							An unexpected error occurred. You can try going back to the
 							homepage — if this keeps happening, please let us know.
 						</p>

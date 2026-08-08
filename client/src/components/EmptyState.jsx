@@ -5,9 +5,9 @@ import React from "react";
 const EmptyState = ({ title, subtitle, actionLabel, onAction, className = "" }) => (
 	<div className={`min-h-[30vh] flex items-center justify-center ${className}`}>
 		<div className="text-center max-w-sm px-4">
-			<h3 className="text-xl font-semibold text-gray-700 dark:text-gray-200">{title}</h3>
+			<h3 className="text-xl font-semibold text-gray-700">{title}</h3>
 			{subtitle && (
-				<p className="text-gray-500 dark:text-gray-400 mt-2 text-sm">{subtitle}</p>
+				<p className="text-gray-500 mt-2 text-sm">{subtitle}</p>
 			)}
 			{actionLabel && onAction && (
 				<button

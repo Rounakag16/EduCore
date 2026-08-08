@@ -67,11 +67,36 @@ const Player = () => {
 		}
 	};
 
-	//Extract YouTube video ID
+	//Extract YouTube video ID from any common URL format the "Share" button
+	//can produce (youtu.be, watch?v=, embed/, shorts/, live/), with or without
+	//an appended ?si= tracking param.
 	const getYoutubeId = (url) => {
 		if (!url) return "";
-		const match = url.match(/(?:youtu\.be\/|v=|embed\/)([^&?/]+)/);
-		return match ? match[1] : url.split("/").pop();
+		const trimmed = url.trim();
+
+		try {
+			const parsed = new URL(trimmed);
+			const host = parsed.hostname.replace(/^www\.|^m\./, "");
+
+			if (host === "youtu.be") {
+				return parsed.pathname.slice(1).split("/")[0];
+			}
+
+			if (host === "youtube.com" || host === "youtube-nocookie.com") {
+				if (parsed.searchParams.has("v")) {
+					return parsed.searchParams.get("v");
+				}
+				const pathParts = parsed.pathname.split("/").filter(Boolean);
+				if (["embed", "shorts", "live"].includes(pathParts[0])) {
+					return pathParts[1];
+				}
+			}
+		} catch {
+			// Not a valid URL — they may have pasted the raw video ID directly
+		}
+
+		// Fallback: strip any query string and take the last path segment
+		return trimmed.split(/[?&]/)[0].split("/").filter(Boolean).pop() || "";
 	};
 
 	//Mark Completed
@@ -214,10 +239,16 @@ const Player = () => {
 				<div className="md:mt-10">
 					{playerData ? (
 						<div>
-							<YouTube
-								videoId={getYoutubeId(playerData.lectureUrl)}
-								iframeClassName="w-full aspect-video"
-							/>
+							{getYoutubeId(playerData.lectureUrl) ? (
+								<YouTube
+									videoId={getYoutubeId(playerData.lectureUrl)}
+									iframeClassName="w-full aspect-video"
+								/>
+							) : (
+								<div className="w-full aspect-video flex items-center justify-center bg-gray-100 text-gray-500 text-sm">
+									Couldn't load this video — the lecture URL looks invalid.
+								</div>
+							)}
 							<div className="flex justify-between items-center mt-1">
 								<p>
 									{playerData.chapter}.{playerData.lecture} {playerData.lectureTitle}
