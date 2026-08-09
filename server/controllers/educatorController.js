@@ -2,6 +2,7 @@ import Course from "../models/Course.js";
 import { v2 as cloudinary } from "cloudinary";
 import Purchase from "../models/Purchase.js";
 import User from "../models/User.js";
+import CourseProgress from "../models/CourseProgress.js";
 
 // Update role to educator
 export const updateRoleToEducator = async (req, res) => {
@@ -83,6 +84,20 @@ export const educatorDashboardData = async (req, res) => {
 
 		const totalEarnings = purchases.reduce((sum, purchase) => sum + purchase.amount, 0);
 
+		// Per-course earnings breakdown for the instructor earnings chart —
+		// reuses the same `purchases` query above rather than hitting the DB again.
+		const earningsByCourseId = {};
+		for (const purchase of purchases) {
+			const id = purchase.courseId.toString();
+			earningsByCourseId[id] = (earningsByCourseId[id] || 0) + purchase.amount;
+		}
+		const courseEarnings = courses.map((course) => ({
+			courseId: course._id,
+			courseTitle: course.courseTitle,
+			earnings: earningsByCourseId[course._id.toString()] || 0,
+			students: course.enrolledStudents.length,
+		}));
+
 		// collect unique students
 		const enrolledStudentsData = [];
 		for (const course of courses) {
@@ -101,12 +116,57 @@ export const educatorDashboardData = async (req, res) => {
 			});
 		}
 
+		// Enrollments over the last 30 days, one point per day — built from
+		// the same completed-purchases query above, no extra DB round-trip.
+		const days = 30;
+		const dayBuckets = new Map();
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+		for (let i = days - 1; i >= 0; i--) {
+			const d = new Date(today);
+			d.setDate(d.getDate() - i);
+			dayBuckets.set(d.toISOString().slice(0, 10), 0);
+		}
+		for (const purchase of purchases) {
+			const key = new Date(purchase.createdAt).toISOString().slice(0, 10);
+			if (dayBuckets.has(key)) {
+				dayBuckets.set(key, dayBuckets.get(key) + 1);
+			}
+		}
+		const enrollmentTrend = Array.from(dayBuckets, ([date, count]) => ({ date, count }));
+
+		// Overall completion rate: of every (student, course) enrollment pair,
+		// what fraction has finished every lecture in that course.
+		let completedPairs = 0;
+		let totalPairs = 0;
+		for (const course of courses) {
+			const totalLectures = course.courseContent.reduce(
+				(sum, chapter) => sum + chapter.chapterContent.length,
+				0,
+			);
+			if (course.enrolledStudents.length === 0 || totalLectures === 0) continue;
+
+			const progresses = await CourseProgress.find({
+				courseId: course._id.toString(),
+				userId: { $in: course.enrolledStudents },
+			});
+
+			totalPairs += course.enrolledStudents.length;
+			completedPairs += progresses.filter(
+				(p) => (p.lectureCompleted?.length || 0) >= totalLectures,
+			).length;
+		}
+		const completionRate = totalPairs > 0 ? Math.round((completedPairs / totalPairs) * 100) : 0;
+
 		res.json({
 			success: true,
 			dashboardData: {
 				totalEarnings,
 				enrolledStudentsData,
 				totalCourses,
+				courseEarnings,
+				enrollmentTrend,
+				completionRate,
 			},
 		});
 	} catch (error) {

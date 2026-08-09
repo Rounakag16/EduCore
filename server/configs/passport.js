@@ -31,6 +31,19 @@ passport.use(
 
 // JWT strategy: verifies the Bearer token on every protected route.
 // This is what replaces Clerk's req.auth() across the app.
+if (!process.env.JWT_SECRET) {
+	// This throws at import time (server.js imports this module directly),
+	// which crashes the whole app before Express even boots. On Vercel that
+	// shows up as an opaque "Serverless Function has crashed" for every
+	// request — the real cause is almost always a missing env var, not a
+	// code bug. Check: Vercel project → Settings → Environment Variables.
+	console.error(
+		"❌ JWT_SECRET is not set. Add it in your deployment platform's environment " +
+			"variables (e.g. Vercel → Project → Settings → Environment Variables) — " +
+			".env files are gitignored and never get deployed automatically.",
+	);
+}
+
 const jwtOptions = {
 	jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
 	secretOrKey: process.env.JWT_SECRET,

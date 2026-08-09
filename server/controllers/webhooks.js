@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import Stripe from "stripe";
 import Purchase from "../models/Purchase.js";
 import Course from "../models/Course.js";
+import { sendEmail } from "../configs/email.js";
 
 const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -57,6 +58,19 @@ const completePurchase = async (purchaseId) => {
 	purchaseData.status = "completed";
 	await purchaseData.save();
 	console.log(`[webhook] Purchase ${purchaseId} marked completed ✅`);
+
+	sendEmail({
+		to: userData.email,
+		subject: `You're enrolled in ${courseData.courseTitle}!`,
+		html: `
+			<div style="font-family: sans-serif; max-width: 480px;">
+				<h2>Welcome aboard, ${userData.name}!</h2>
+				<p>Your enrollment in <strong>${courseData.courseTitle}</strong> is confirmed.</p>
+				<p>You can start learning right away from your "My Enrollments" page.</p>
+				<p style="color: #6b7280; font-size: 13px; margin-top: 24px;">— The EduCore Team</p>
+			</div>
+		`,
+	});
 };
 
 const failPurchase = async (purchaseId) => {

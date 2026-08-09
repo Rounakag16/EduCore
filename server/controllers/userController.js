@@ -4,6 +4,8 @@ import Purchase from "../models/Purchase.js";
 import User from "../models/User.js";
 import Stripe from "stripe";
 import { v2 as cloudinary } from "cloudinary";
+import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
+import { sendEmail } from "../configs/email.js";
 
 // Get user data
 export const getUserData = async (req, res) => {
@@ -16,6 +18,111 @@ export const getUserData = async (req, res) => {
 		}
 
 		res.json({ success: true, user });
+	} catch (error) {
+		return res.status(500).json({
+			success: false,
+			message: error.message,
+		});
+	}
+};
+
+// Generate and stream a completion certificate as a PDF. Only issued once
+// every lecture in the course has actually been marked complete — this is
+// checked server-side (never trust a client-side "100%" claim for something
+// that gets handed out as proof of completion).
+export const getCourseCertificate = async (req, res) => {
+	try {
+		const userId = req.user.id;
+		const { courseId } = req.params;
+
+		const [user, course, progress] = await Promise.all([
+			User.findById(userId),
+			Course.findById(courseId).populate({ path: "educator", select: "name" }),
+			CourseProgress.findOne({ userId, courseId }),
+		]);
+
+		if (!user || !course) {
+			return res.status(404).json({ success: false, message: "Course not found" });
+		}
+
+		if (!user.enrolledCourses.includes(course._id)) {
+			return res.status(403).json({ success: false, message: "You are not enrolled in this course" });
+		}
+
+		const totalLectures = course.courseContent.reduce(
+			(count, chapter) => count + chapter.chapterContent.length,
+			0,
+		);
+		const completedCount = progress?.lectureCompleted?.length || 0;
+
+		if (totalLectures === 0 || completedCount < totalLectures) {
+			return res.status(400).json({
+				success: false,
+				message: "Course not yet fully completed",
+			});
+		}
+
+		// Build the certificate PDF
+		const pdfDoc = await PDFDocument.create();
+		const page = pdfDoc.addPage([842, 595]); // A4 landscape
+		const { width, height } = page.getSize();
+
+		const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+		const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+		const fontItalic = await pdfDoc.embedFont(StandardFonts.HelveticaOblique);
+
+		const navy = rgb(0.11, 0.16, 0.32);
+		const blue = rgb(0.15, 0.39, 0.92);
+		const gray = rgb(0.4, 0.4, 0.42);
+
+		// Border
+		page.drawRectangle({
+			x: 20,
+			y: 20,
+			width: width - 40,
+			height: height - 40,
+			borderColor: blue,
+			borderWidth: 3,
+		});
+		page.drawRectangle({
+			x: 30,
+			y: 30,
+			width: width - 60,
+			height: height - 60,
+			borderColor: navy,
+			borderWidth: 1,
+		});
+
+		const centerText = (text, y, font, size, color = navy) => {
+			const textWidth = font.widthOfTextAtSize(text, size);
+			page.drawText(text, { x: (width - textWidth) / 2, y, size, font, color });
+		};
+
+		centerText("EDUCORE", height - 90, fontBold, 22, blue);
+		centerText("Certificate of Completion", height - 140, fontBold, 30, navy);
+		centerText("This certifies that", height - 200, fontRegular, 14, gray);
+		centerText(user.name, height - 240, fontBold, 26, navy);
+		centerText("has successfully completed the course", height - 280, fontRegular, 14, gray);
+		centerText(course.courseTitle, height - 320, fontBold, 20, blue);
+
+		const educatorName = course.educator?.name || "EduCore Instructor";
+		centerText(`Instructor: ${educatorName}`, height - 360, fontItalic, 12, gray);
+
+		const completionDate = new Date().toLocaleDateString("en-US", {
+			year: "numeric",
+			month: "long",
+			day: "numeric",
+		});
+		centerText(`Completed on ${completionDate}`, height - 390, fontRegular, 12, gray);
+
+		const pdfBytes = await pdfDoc.save();
+
+		res.setHeader("Content-Type", "application/pdf");
+		res.setHeader(
+			"Content-Disposition",
+			`attachment; filename="${course.courseTitle.replace(/[^a-z0-9]/gi, "_")}_certificate.pdf"`,
+		);
+		res.send(Buffer.from(pdfBytes));
 	} catch (error) {
 		return res.status(500).json({
 			success: false,
@@ -145,6 +252,8 @@ export const updateUserCourseProgress = async (req, res) => {
 		const { courseId, lectureId } = req.body;
 		const progressData = await CourseProgress.findOne({ userId, courseId });
 
+		let updatedLectureCompleted;
+
 		if (progressData) {
 			if (progressData.lectureCompleted.includes(lectureId)) {
 				return res.json({ success: true, message: "Lecture Already Completed" });
@@ -152,13 +261,44 @@ export const updateUserCourseProgress = async (req, res) => {
 
 			progressData.lectureCompleted.push(lectureId);
 			await progressData.save();
+			updatedLectureCompleted = progressData.lectureCompleted;
 		} else {
-			await CourseProgress.create({
+			const created = await CourseProgress.create({
 				userId,
 				courseId,
 				lectureCompleted: [lectureId],
 			});
+			updatedLectureCompleted = created.lectureCompleted;
 		}
+
+		// If this was the last remaining lecture, send a completion email.
+		// Fire-and-forget — never let an email failure affect the response.
+		Course.findById(courseId)
+			.then(async (course) => {
+				if (!course) return;
+				const totalLectures = course.courseContent.reduce(
+					(count, chapter) => count + chapter.chapterContent.length,
+					0,
+				);
+				if (totalLectures > 0 && updatedLectureCompleted.length === totalLectures) {
+					const user = await User.findById(userId);
+					if (user) {
+						sendEmail({
+							to: user.email,
+							subject: `You completed ${course.courseTitle}! 🎉`,
+							html: `
+								<div style="font-family: sans-serif; max-width: 480px;">
+									<h2>Nice work, ${user.name}!</h2>
+									<p>You've finished every lecture in <strong>${course.courseTitle}</strong>.</p>
+									<p>Head back to "My Enrollments" to download your certificate of completion.</p>
+									<p style="color: #6b7280; font-size: 13px; margin-top: 24px;">— The EduCore Team</p>
+								</div>
+							`,
+						});
+					}
+				}
+			})
+			.catch((err) => console.error("[email] Completion check failed:", err.message));
 
 		res.json({ success: true, message: "Progress Updated" });
 	} catch (error) {

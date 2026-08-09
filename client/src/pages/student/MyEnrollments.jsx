@@ -19,6 +19,7 @@ const MyEnrollments = () => {
 		calculateNumberOfLectures,
 	} = useContext(AppContext);
 	const [progressArray, setProgressArray] = useState([]);
+	const [downloadingCertFor, setDownloadingCertFor] = useState(null);
 
 	const getCourseProgress = async () => {
 		try {
@@ -41,6 +42,34 @@ const MyEnrollments = () => {
 			setProgressArray(tempProgressArray);
 		} catch (error) {
 			toast.error(error.message);
+		}
+	};
+
+	// Certificate download is JWT-protected, so a plain <a href> can't carry
+	// the Authorization header — fetch as a blob and trigger the download manually.
+	const downloadCertificate = async (course) => {
+		setDownloadingCertFor(course._id);
+		try {
+			const token = await getToken();
+			const response = await axios.get(backendUrl + `/api/user/certificate/${course._id}`, {
+				headers: { Authorization: `Bearer ${token}` },
+				responseType: "blob",
+			});
+
+			const url = window.URL.createObjectURL(new Blob([response.data]));
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = `${course.courseTitle.replace(/[^a-z0-9]/gi, "_")}_certificate.pdf`;
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+			window.URL.revokeObjectURL(url);
+		} catch (error) {
+			toast.error(
+				error.response?.data?.message || "Couldn't download certificate — please try again",
+			);
+		} finally {
+			setDownloadingCertFor(null);
 		}
 	};
 
@@ -114,16 +143,32 @@ const MyEnrollments = () => {
 											<span>Lectures</span>
 										</td>
 										<td className="px-4 py-3 max-sm:text-right">
-											<button
-												className="px-3 sm:px-5 py-1.5 sm:py-2 bg-blue-600 max-sm:text-xs text-white rounded"
-												onClick={() => navigate("/player/" + course._id)}
-											>
+											<div className="flex items-center gap-2 justify-end max-sm:justify-end">
+												<button
+													className="px-3 sm:px-5 py-1.5 sm:py-2 bg-blue-600 max-sm:text-xs text-white rounded"
+													onClick={() => navigate("/player/" + course._id)}
+												>
+													{progressArray[index] &&
+													progressArray[index].lectureCompleted ===
+														progressArray[index].totalLectures
+														? "Completed"
+														: "On going"}
+												</button>
 												{progressArray[index] &&
-												progressArray[index].lectureCompleted ===
-													progressArray[index].totalLectures
-													? "Completed"
-													: "On going"}
-											</button>
+													progressArray[index].totalLectures > 0 &&
+													progressArray[index].lectureCompleted ===
+														progressArray[index].totalLectures && (
+														<button
+															onClick={() => downloadCertificate(course)}
+															disabled={downloadingCertFor === course._id}
+															className="px-3 sm:px-5 py-1.5 sm:py-2 border border-blue-600 text-blue-600 max-sm:text-xs rounded disabled:opacity-60"
+														>
+															{downloadingCertFor === course._id
+																? "..."
+																: "Certificate"}
+														</button>
+													)}
+											</div>
 										</td>
 									</tr>
 								))

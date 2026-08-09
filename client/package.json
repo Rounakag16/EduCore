@@ -13,6 +13,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "axios": "^1.19.0",
     "humanize-duration": "^3.34.0",
+    "pusher-js": "^8.6.0",
     "quill": "^2.0.3",
     "rc-progress": "^4.0.0",
     "react": "^19.2.7",
@@ -21,6 +22,7 @@
     "react-simple-star-rating": "^5.1.7",
     "react-toastify": "^11.1.0",
     "react-youtube": "^10.1.0",
+    "recharts": "^3.10.1",
     "tailwindcss": "^4.3.3",
     "uniqid": "^5.4.0"
   },

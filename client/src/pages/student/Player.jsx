@@ -8,6 +8,7 @@ import Rating from "../../components/student/Rating";
 import axios from "axios";
 import { toast } from "react-toastify";
 import Loading from "../../components/student/Loading";
+import Discussion from "../../components/student/Discussion";
 
 const Player = () => {
 	const [openSections, setOpenSections] = useState({});
@@ -233,6 +234,9 @@ const Player = () => {
 					<div className="flex items-center gap-2 py-3 mt-10">
 						<h1 className="text-xl font-bold">Rate this Course:</h1>
 						<Rating initialRating={initialRating} onRate={handleRate} />
+					</div>
+					<div className="mt-8">
+						<Discussion courseId={courseId} />
 					</div>
 				</div>
 				{/* Right column */}
