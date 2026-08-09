@@ -23,48 +23,50 @@ const App = () => {
 	const isEducatorRoute = useMatch("/educator/*");
 
 	return (
-		<div className="text-default min-h-screen bg-white">
+		<div className="text-default min-h-screen bg-white flex flex-col">
 			<ToastContainer />
 			{!isEducatorRoute && <Navbar />}
-			<Routes>
-				<Route path="/" element={<Home />} />
-				<Route path="/course-list" element={<CoursesList />} />
-				<Route path="/course-list/:input" element={<CoursesList />} />
-				<Route path="/course/:id" element={<CourseDetails />} />
-				<Route path="/login" element={<Login />} />
-				<Route path="/register" element={<Register />} />
-				<Route
-					path="/my-enrollments"
-					element={
-						<ProtectedRoute>
-							<MyEnrollments />
-						</ProtectedRoute>
-					}
-				/>
-				<Route
-					path="/player/:courseId"
-					element={
-						<ProtectedRoute>
-							<Player />
-						</ProtectedRoute>
-					}
-				/>
-				<Route path="/loading/:path" element={<Loading />} />
+			<main className="flex-1">
+				<Routes>
+					<Route path="/" element={<Home />} />
+					<Route path="/course-list" element={<CoursesList />} />
+					<Route path="/course-list/:input" element={<CoursesList />} />
+					<Route path="/course/:id" element={<CourseDetails />} />
+					<Route path="/login" element={<Login />} />
+					<Route path="/register" element={<Register />} />
+					<Route
+						path="/my-enrollments"
+						element={
+							<ProtectedRoute>
+								<MyEnrollments />
+							</ProtectedRoute>
+						}
+					/>
+					<Route
+						path="/player/:courseId"
+						element={
+							<ProtectedRoute>
+								<Player />
+							</ProtectedRoute>
+						}
+					/>
+					<Route path="/loading/:path" element={<Loading />} />
 
-				<Route
-					path="/educator"
-					element={
-						<ProtectedRoute requireEducator>
-							<Educator />
-						</ProtectedRoute>
-					}
-				>
-					<Route index element={<Dashboard />} />
-					<Route path="add-course" element={<AddCourse />} />
-					<Route path="my-courses" element={<MyCourses />} />
-					<Route path="student-enrolled" element={<StudentsEnrolled />} />
-				</Route>
-			</Routes>
+					<Route
+						path="/educator"
+						element={
+							<ProtectedRoute requireEducator>
+								<Educator />
+							</ProtectedRoute>
+						}
+					>
+						<Route index element={<Dashboard />} />
+						<Route path="add-course" element={<AddCourse />} />
+						<Route path="my-courses" element={<MyCourses />} />
+						<Route path="student-enrolled" element={<StudentsEnrolled />} />
+					</Route>
+				</Routes>
+			</main>
 			{!isEducatorRoute && <Footer />}
 		</div>
 	);
