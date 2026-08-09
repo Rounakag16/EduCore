@@ -15,11 +15,18 @@ const RightSection = ({ playerData, setPlayerData, isAlreadyEnrolled, enrollCour
 	return (
 		<div className="max-w-course-card z-10 shadow-custom-card rounded-t md:rounded-none overflow-hidden bg-white min-w-[300px] sm:min-w-[420px]">
 			{playerData ? (
-				<YouTube
-					videoId={playerData.videoId}
-					opts={{ playerVars: { autoplay: 1 } }}
-					iframeClassName="w-full aspect-video"
-				/>
+				playerData.videoId ? (
+					<YouTube
+						key={playerData.videoId}
+						videoId={playerData.videoId}
+						opts={{ playerVars: { autoplay: 1 } }}
+						iframeClassName="w-full aspect-video"
+					/>
+				) : (
+					<div className="w-full aspect-video flex items-center justify-center bg-gray-100 text-gray-500 text-sm">
+						Couldn't load this preview — the lecture URL looks invalid.
+					</div>
+				)
 			) : (
 				<img src={courseData.courseThumbnail} alt="" />
 			)}

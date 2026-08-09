@@ -7,10 +7,16 @@ import { sendEmail } from "../configs/email.js";
 const stripeInstance = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // Shared by both event handlers below — marks a purchase complete and
-// enrolls the student. Idempotent: safe to call more than once for the
-// same purchaseId (Stripe can deliver the same event more than once, and
-// a payment can trigger both checkout.session.completed AND
-// payment_intent.succeeded).
+// enrolls the student.
+//
+// This MUST be safe under concurrency: Stripe commonly fires both
+// checkout.session.completed AND payment_intent.succeeded for the same
+// payment within milliseconds of each other, so this can genuinely run
+// twice in parallel for the same purchaseId. A "read status, check in JS,
+// then save" pattern is NOT safe here — both concurrent calls can read
+// status="pending" before either writes "completed", and both would then
+// proceed to enroll the student, producing duplicate array entries. Every
+// write below uses an atomic MongoDB operator specifically to close that gap.
 const completePurchase = async (purchaseId) => {
 	console.log(`[webhook] completePurchase called for purchaseId=${purchaseId}`);
 
@@ -19,17 +25,22 @@ const completePurchase = async (purchaseId) => {
 		return;
 	}
 
-	const purchaseData = await Purchase.findById(purchaseId);
-	if (!purchaseData) {
-		console.error(`[webhook] ABORTED: no Purchase document found for id ${purchaseId}`);
-		return;
-	}
-	console.log(`[webhook] Purchase found, current status="${purchaseData.status}"`);
+	// Atomic compare-and-set: only the request that actually flips
+	// pending -> completed gets a non-null result back. A concurrent/duplicate
+	// call for the same purchaseId will find nothing to update and get null.
+	const purchaseData = await Purchase.findOneAndUpdate(
+		{ _id: purchaseId, status: { $ne: "completed" } },
+		{ $set: { status: "completed" } },
+	);
 
-	if (purchaseData.status === "completed") {
-		console.log("[webhook] Already completed — skipping (idempotent, this is normal on retries)");
+	if (!purchaseData) {
+		console.log(
+			`[webhook] Purchase ${purchaseId} already completed (or doesn't exist) — skipping ` +
+				"(this is expected/normal when Stripe sends multiple events for one payment)",
+		);
 		return;
 	}
+	console.log(`[webhook] Purchase ${purchaseId} claimed for completion`);
 
 	const userData = await User.findById(purchaseData.userId);
 	const courseData = await Course.findById(purchaseData.courseId.toString());
@@ -43,21 +54,13 @@ const completePurchase = async (purchaseId) => {
 		return;
 	}
 
-	if (!courseData.enrolledStudents.includes(userData._id)) {
-		courseData.enrolledStudents.push(userData._id);
-		await courseData.save();
-		console.log(`[webhook] Added ${userData._id} to Course.enrolledStudents`);
-	}
-
-	if (!userData.enrolledCourses.includes(courseData._id)) {
-		userData.enrolledCourses.push(courseData._id);
-		await userData.save();
-		console.log(`[webhook] Added ${courseData._id} to User.enrolledCourses`);
-	}
-
-	purchaseData.status = "completed";
-	await purchaseData.save();
-	console.log(`[webhook] Purchase ${purchaseId} marked completed ✅`);
+	// $addToSet is atomic and a no-op if the value is already present —
+	// safe even if this somehow still ran more than once.
+	await Promise.all([
+		Course.updateOne({ _id: courseData._id }, { $addToSet: { enrolledStudents: userData._id } }),
+		User.updateOne({ _id: userData._id }, { $addToSet: { enrolledCourses: courseData._id } }),
+	]);
+	console.log(`[webhook] Enrolled ${userData._id} in course ${courseData._id} ✅`);
 
 	sendEmail({
 		to: userData.email,

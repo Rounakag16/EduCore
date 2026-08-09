@@ -2,6 +2,7 @@ import { useContext, useState } from "react";
 import { assets } from "../../../assets/assets";
 import humanizeDuration from "humanize-duration";
 import { AppContext } from "../../../context/AppContext";
+import { getYoutubeId } from "../../../utils/youtube";
 
 const LeftSection = ({ playerData, setPlayerData }) => {
 	const [openSections, setOpenSections] = useState({});
@@ -85,7 +86,7 @@ const LeftSection = ({ playerData, setPlayerData }) => {
 														<p
 															onClick={() =>
 																setPlayerData({
-																	videoId: lecture.lectureUrl.split("/").pop(),
+																	videoId: getYoutubeId(lecture.lectureUrl),
 																})
 															}
 															className="text-blue-500 cursor-pointer"

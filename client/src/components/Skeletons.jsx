@@ -50,3 +50,11 @@ export const SkeletonStatCard = () => (
 		</div>
 	</div>
 );
+
+// Generic block skeleton for charts and other rectangular content
+export const SkeletonBlock = ({ height = 220, className = "" }) => (
+	<div
+		className={`skeleton w-full rounded-md ${className}`}
+		style={{ height }}
+	/>
+);

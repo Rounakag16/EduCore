@@ -9,6 +9,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import Loading from "../../components/student/Loading";
 import Discussion from "../../components/student/Discussion";
+import { getYoutubeId } from "../../utils/youtube";
 
 const Player = () => {
 	const [openSections, setOpenSections] = useState({});
@@ -26,6 +27,7 @@ const Player = () => {
 		getToken,
 		userData,
 		fetchUserEnrolledCourses,
+		fetchAllCourses,
 	} = useContext(AppContext);
 
 	//Find the course
@@ -68,38 +70,6 @@ const Player = () => {
 		}
 	};
 
-	//Extract YouTube video ID from any common URL format the "Share" button
-	//can produce (youtu.be, watch?v=, embed/, shorts/, live/), with or without
-	//an appended ?si= tracking param.
-	const getYoutubeId = (url) => {
-		if (!url) return "";
-		const trimmed = url.trim();
-
-		try {
-			const parsed = new URL(trimmed);
-			const host = parsed.hostname.replace(/^www\.|^m\./, "");
-
-			if (host === "youtu.be") {
-				return parsed.pathname.slice(1).split("/")[0];
-			}
-
-			if (host === "youtube.com" || host === "youtube-nocookie.com") {
-				if (parsed.searchParams.has("v")) {
-					return parsed.searchParams.get("v");
-				}
-				const pathParts = parsed.pathname.split("/").filter(Boolean);
-				if (["embed", "shorts", "live"].includes(pathParts[0])) {
-					return pathParts[1];
-				}
-			}
-		} catch {
-			// Not a valid URL — they may have pasted the raw video ID directly
-		}
-
-		// Fallback: strip any query string and take the last path segment
-		return trimmed.split(/[?&]/)[0].split("/").filter(Boolean).pop() || "";
-	};
-
 	//Mark Completed
 	const markCompleted = async (lectureId) => {
 		try {
@@ -139,6 +109,7 @@ const Player = () => {
 			if (data.success) {
 				toast.success(data.message);
 				fetchUserEnrolledCourses();
+				fetchAllCourses();
 				getCourseData();
 			} else {
 				toast.error(data.message);

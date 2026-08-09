@@ -3,7 +3,7 @@ import { AppContext } from "../../context/AppContext";
 import { assets } from "../../assets/assets";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { SkeletonStatCard, SkeletonTable } from "../../components/Skeletons";
+import { SkeletonBlock, SkeletonStatCard, SkeletonTable } from "../../components/Skeletons";
 import EmptyState from "../../components/EmptyState";
 import {
 	Bar,
@@ -51,11 +51,6 @@ const Dashboard = () => {
 		return (
 			<div className="min-h-screen flex flex-col items-start justify-between gap-8 md:p-8 md:pb-0 p-4 pt-8 pb-0">
 				<div className="space-y-5 w-full">
-					<div className="flex flex-wrap gap-5 items-center">
-						<SkeletonStatCard />
-						<SkeletonStatCard />
-						<SkeletonStatCard />
-					</div>
 					<div>
 						<h2 className="pb-4 text-lg font-medium text-gray-800">
 							Latest Enrollments
@@ -68,6 +63,18 @@ const Dashboard = () => {
 							</table>
 						</div>
 					</div>
+					<div className="flex flex-wrap gap-5 items-center">
+						<SkeletonStatCard />
+						<SkeletonStatCard />
+						<SkeletonStatCard />
+						<SkeletonStatCard />
+					</div>
+					<div className="max-w-4xl w-full">
+						<SkeletonBlock height={220} />
+					</div>
+					<div className="max-w-4xl w-full">
+						<SkeletonBlock height={280} />
+					</div>
 				</div>
 			</div>
 		);
@@ -76,6 +83,51 @@ const Dashboard = () => {
 	return (
 		<div className="min-h-screen flex flex-col items-start justify-between gap-8 md:p-8 md:pb-0 p-4 pt-8 pb-0">
 			<div className="space-y-5 w-full">
+				<div>
+					<h2 className="pb-4 text-lg font-medium text-gray-800">
+						Latest Enrollments
+					</h2>
+					{dashboardData.enrolledStudentsData.length === 0 ? (
+						<div className="max-w-4xl w-full rounded-md bg-white border border-gray-500/20">
+							<EmptyState
+								title="No enrollments yet"
+								subtitle="Once students start enrolling in your courses, they'll show up here."
+							/>
+						</div>
+					) : (
+						<div className="flex flex-col items-center max-w-4xl w-full overflow-hidden rounded-md bg-white border border-gray-500/20">
+							<table className="table-fixed md:table-auto w-full overflow-hidden">
+								<thead className="text-gray-900 border-b border-gray-500/20 text-sm text-left">
+									<tr>
+										<th className="px-4 py-3 font-semibold text-center hidden sm:table-cell">
+											#
+										</th>
+										<th className="px-4 py-3 font-semibold">Student Name</th>
+										<th className="px-4 py-3 font-semibold">Course Title</th>
+									</tr>
+								</thead>
+								<tbody className="text-sm text-gray-500">
+									{dashboardData.enrolledStudentsData.map((item, index) => (
+										<tr key={index} className="border-b border-gray-500/20">
+											<td className="px-4 py-3 text-center hidden sm:table-cell">
+												{index + 1}
+											</td>
+											<td className="md:px-4 px-2 py-3 flex items-center space-x-3">
+												<img
+													src={item.student.imageUrl}
+													alt="profile"
+													className="w-9 h-9 rounded-full"
+												/>
+												<span className="truncate">{item.student.name}</span>
+											</td>
+											<td className="px-4 py-3 truncate">{item.courseTitle}</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					)}
+				</div>
 				<div className="flex flex-wrap gap-5 items-center">
 					<div className="flex items-center gap-3 shadow-card border border-blue-500 p-3 w-56 rounded-md bg-white">
 						<img src={assets.patients_icon} alt="patients icons" />
@@ -202,54 +254,6 @@ const Dashboard = () => {
 						</div>
 					</div>
 				)}
-				<div>
-					<h2 className="pb-4 text-lg font-medium text-gray-800">
-						Latest Enrollments
-					</h2>
-					{dashboardData.enrolledStudentsData.length === 0 ? (
-						<div className="max-w-4xl w-full rounded-md bg-white border border-gray-500/20">
-							<EmptyState
-								title="No enrollments yet"
-								subtitle="Once students start enrolling in your courses, they'll show up here."
-							/>
-						</div>
-					) : (
-						<div className="flex flex-col items-center max-w-4xl w-full overflow-hidden rounded-md bg-white border border-gray-500/20">
-							<table className="table-fixed md:table-auto w-full overflow-hidden">
-								<thead className="text-gray-900 border-b border-gray-500/20 text-sm text-left">
-									<tr>
-										<th className="px-4 py-3 font-semibold text-center hidden sm:table-cell">
-											#
-										</th>
-										<th className="px-4 py-3 font-semibold">Student Name</th>
-										<th className="px-4 py-3 font-semibold">Course Title</th>
-									</tr>
-								</thead>
-								<tbody className="text-sm text-gray-500">
-									{dashboardData.enrolledStudentsData.map((item, index) => (
-										<tr
-											key={index}
-											className="border-b border-gray-500/20"
-										>
-											<td className="px-4 py-3 text-center hidden sm:table-cell">
-												{index + 1}
-											</td>
-											<td className="md:px-4 px-2 py-3 flex items-center space-x-3">
-												<img
-													src={item.student.imageUrl}
-													alt="profile"
-													className="w-9 h-9 rounded-full"
-												/>
-												<span className="truncate">{item.student.name}</span>
-											</td>
-											<td className="px-4 py-3 truncate">{item.courseTitle}</td>
-										</tr>
-									))}
-								</tbody>
-							</table>
-						</div>
-					)}
-				</div>
 			</div>
 		</div>
 	);
