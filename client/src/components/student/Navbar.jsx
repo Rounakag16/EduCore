@@ -83,7 +83,7 @@ const Navbar = () => {
 						<UserMenu />
 					) : (
 						<button onClick={() => navigate("/login")}>
-							<img src={assets.profile} alt="" />
+							<img className="h-6 w-6" src={assets.profile} alt="" />
 						</button>
 					)}
 				</div>
