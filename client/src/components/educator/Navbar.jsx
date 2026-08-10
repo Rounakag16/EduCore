@@ -13,7 +13,7 @@ const Navbar = () => {
 			</Link>
 			<div className="flex items-center gap-5 text-gray-500 relative">
 				<p>Hi! {userData ? userData.name : "Educator"}</p>
-				{userData ? <UserMenu /> : <img className="max-w-8" src={assets.profile_img} />}
+				{userData ? <UserMenu /> : <img className="max-w-8" src={assets.profile} />}
 			</div>
 		</div>
 	);

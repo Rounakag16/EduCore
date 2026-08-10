@@ -15,6 +15,7 @@ import course_3_thumbnail from "./course_3.png";
 import course_4_thumbnail from "./course_4.png";
 import star from "./rating_star.svg";
 import star_blank from "./star_dull_icon.svg";
+import profile from "./default_pfp.png";
 import profile_img_1 from "./profile_img_1.png";
 import profile_img_2 from "./profile_img_2.png";
 import profile_img_3 from "./profile_img_3.png";
@@ -58,6 +59,7 @@ export const assets = {
 	course_4_thumbnail,
 	star,
 	star_blank,
+	profile,
 	profile_img_1,
 	profile_img_2,
 	profile_img_3,
