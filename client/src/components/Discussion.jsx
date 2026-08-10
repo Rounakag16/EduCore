@@ -119,7 +119,7 @@ const Discussion = ({ courseId }) => {
 					messages.map((m) => (
 						<div key={m._id} className="flex gap-2 items-start">
 							<img
-								src={m.userImage || assets.profile_img}
+								src={m.userImage || assets.profile}
 								alt={m.userName}
 								className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5"
 							/>
