@@ -4,9 +4,7 @@ import { assets, dummyTestimonial } from "../../assets/assets";
 const TestimonialsSection = () => {
 	return (
 		<div className="pb-14 px-8 md:px-0">
-			<h2 className="text-3xl front-medium text-gray-800">
-				Testimonials
-			</h2>
+			<h2 className="text-3xl front-medium text-gray-800">Testimonials</h2>
 			<p className="md:text-base text-gray-500 mt-3">
 				Join thousands of learners who have transformed their careers,
 				<br />
@@ -25,12 +23,8 @@ const TestimonialsSection = () => {
 								alt={testimonial.name}
 							/>
 							<div>
-								<h1 className="text-lg font-medium text-gray-800">
-									{testimonial.name}
-								</h1>
-								<p className="text-gray-800/80">
-									{testimonial.role}
-								</p>
+								<h1 className="text-lg font-medium text-gray-800">{testimonial.name}</h1>
+								<p className="text-gray-800/80">{testimonial.role}</p>
 							</div>
 						</div>
 						<div className="p-5 pb-7">
@@ -38,23 +32,17 @@ const TestimonialsSection = () => {
 								{[...Array(5)].map((_, i) => (
 									<img
 										key={i}
-										src={
-											i < Math.floor(testimonial.rating)
-												? assets.star
-												: assets.star_blank
-										}
+										src={i < Math.floor(testimonial.rating) ? assets.star : assets.star_blank}
 										className="h-5"
 										alt="star"
 									/>
 								))}
 							</div>
-							<p className="text-gray-500 mt-5">
-								{testimonial.feedback}
-							</p>
+							<p className="text-gray-500 mt-5">{testimonial.feedback}</p>
 						</div>
-						<a href="#" className="text-blue-500 underline px-5">
+						{/* <a href="#" className="text-blue-500 underline px-5">
 							Read more
-						</a>
+						</a> */}
 					</div>
 				))}
 			</div>
