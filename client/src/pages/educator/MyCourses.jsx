@@ -59,11 +59,12 @@ const MyCourses = () => {
 									<th className="px-4 py-3 font-semibold truncate">Earnings</th>
 									<th className="px-4 py-3 font-semibold truncate">Students</th>
 									<th className="px-4 py-3 font-semibold truncate">Published On</th>
+									<th className="px-4 py-3 font-semibold truncate">Discussion</th>
 								</tr>
 							</thead>
 							<tbody className="text-sm text-gray-500">
 								{loading ? (
-									<SkeletonTable rows={5} columns={4} />
+									<SkeletonTable rows={5} columns={5} />
 								) : (
 									courses.map((course) => (
 										<tr
@@ -91,6 +92,14 @@ const MyCourses = () => {
 											<td className="px-4 py-3">{course.enrolledStudents.length}</td>
 											<td className="px-4 py-3">
 												{new Date(course.createdAt).toLocaleDateString()}
+											</td>
+											<td className="px-4 py-3">
+												<button
+													onClick={() => navigate(`/educator/discussions/${course._id}`)}
+													className="text-blue-600 text-sm hover:underline"
+												>
+													View
+												</button>
 											</td>
 										</tr>
 									))

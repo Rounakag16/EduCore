@@ -8,7 +8,7 @@ import Rating from "../../components/student/Rating";
 import axios from "axios";
 import { toast } from "react-toastify";
 import Loading from "../../components/student/Loading";
-import Discussion from "../../components/student/Discussion";
+import Discussion from "../../components/Discussion";
 import { getYoutubeId } from "../../utils/youtube";
 
 const Player = () => {

@@ -1,9 +1,9 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { AppContext } from "../../context/AppContext";
-import { assets } from "../../assets/assets";
-import { getPusherClient } from "../../configs/pusher";
+import { AppContext } from "../context/AppContext";
+import { assets } from "../assets/assets";
+import { getPusherClient } from "../configs/pusher";
 
 const Discussion = ({ courseId }) => {
 	const { backendUrl, getToken, userData } = useContext(AppContext);
