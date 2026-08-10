@@ -52,9 +52,7 @@ const Dashboard = () => {
 			<div className="min-h-screen flex flex-col items-start justify-between gap-8 md:p-8 md:pb-0 p-4 pt-8 pb-0">
 				<div className="space-y-5 w-full">
 					<div>
-						<h2 className="pb-4 text-lg font-medium text-gray-800">
-							Latest Enrollments
-						</h2>
+						<h2 className="pb-4 text-lg font-medium text-gray-800">Latest Enrollments</h2>
 						<div className="flex flex-col items-center max-w-4xl w-full overflow-hidden rounded-md bg-white border border-gray-500/20">
 							<table className="table-fixed md:table-auto w-full overflow-hidden">
 								<tbody>
@@ -84,9 +82,7 @@ const Dashboard = () => {
 		<div className="min-h-screen flex flex-col items-start justify-between gap-8 md:p-8 md:pb-0 p-4 pt-8 pb-0">
 			<div className="space-y-5 w-full">
 				<div>
-					<h2 className="pb-4 text-lg font-medium text-gray-800">
-						Latest Enrollments
-					</h2>
+					<h2 className="pb-4 text-lg font-medium text-gray-800">Latest Enrollments</h2>
 					{dashboardData.enrolledStudentsData.length === 0 ? (
 						<div className="max-w-4xl w-full rounded-md bg-white border border-gray-500/20">
 							<EmptyState
@@ -99,9 +95,7 @@ const Dashboard = () => {
 							<table className="table-fixed md:table-auto w-full overflow-hidden">
 								<thead className="text-gray-900 border-b border-gray-500/20 text-sm text-left">
 									<tr>
-										<th className="px-4 py-3 font-semibold text-center hidden sm:table-cell">
-											#
-										</th>
+										<th className="px-4 py-3 font-semibold text-center hidden sm:table-cell">#</th>
 										<th className="px-4 py-3 font-semibold">Student Name</th>
 										<th className="px-4 py-3 font-semibold">Course Title</th>
 									</tr>
@@ -109,12 +103,10 @@ const Dashboard = () => {
 								<tbody className="text-sm text-gray-500">
 									{dashboardData.enrolledStudentsData.map((item, index) => (
 										<tr key={index} className="border-b border-gray-500/20">
-											<td className="px-4 py-3 text-center hidden sm:table-cell">
-												{index + 1}
-											</td>
+											<td className="px-4 py-3 text-center hidden sm:table-cell">{index + 1}</td>
 											<td className="md:px-4 px-2 py-3 flex items-center space-x-3">
 												<img
-													src={item.student.imageUrl}
+													src={item.student.imageUrl || assets.profile}
 													alt="profile"
 													className="w-9 h-9 rounded-full"
 												/>
@@ -141,9 +133,7 @@ const Dashboard = () => {
 					<div className="flex items-center gap-3 shadow-card border border-blue-500 p-3 w-56 rounded-md bg-white">
 						<img src={assets.appointments_icon} alt="appointments icon" />
 						<div>
-							<p className="text-2xl font-medium text-gray-600">
-								{dashboardData.totalCourses}
-							</p>
+							<p className="text-2xl font-medium text-gray-600">{dashboardData.totalCourses}</p>
 							<p className="text-base text-gray-500">Total Courses</p>
 						</div>
 					</div>
@@ -171,9 +161,7 @@ const Dashboard = () => {
 				</div>
 				{dashboardData.enrollmentTrend && dashboardData.enrollmentTrend.length > 0 && (
 					<div>
-						<h2 className="pb-4 text-lg font-medium text-gray-800">
-							Enrollments — Last 30 Days
-						</h2>
+						<h2 className="pb-4 text-lg font-medium text-gray-800">Enrollments — Last 30 Days</h2>
 						<div className="max-w-4xl w-full rounded-md bg-white border border-gray-500/20 p-4">
 							<ResponsiveContainer width="100%" height={220}>
 								<LineChart
@@ -187,11 +175,7 @@ const Dashboard = () => {
 									margin={{ top: 8, right: 16, left: 0, bottom: 0 }}
 								>
 									<CartesianGrid strokeDasharray="3 3" vertical={false} />
-									<XAxis
-										dataKey="label"
-										tick={{ fontSize: 11, fill: "#6b7280" }}
-										interval={4}
-									/>
+									<XAxis dataKey="label" tick={{ fontSize: 11, fill: "#6b7280" }} interval={4} />
 									<YAxis
 										tick={{ fontSize: 12, fill: "#6b7280" }}
 										width={30}
@@ -215,9 +199,7 @@ const Dashboard = () => {
 				)}
 				{dashboardData.courseEarnings && dashboardData.courseEarnings.length > 0 && (
 					<div>
-						<h2 className="pb-4 text-lg font-medium text-gray-800">
-							Earnings by Course
-						</h2>
+						<h2 className="pb-4 text-lg font-medium text-gray-800">Earnings by Course</h2>
 						<div className="max-w-4xl w-full rounded-md bg-white border border-gray-500/20 p-4">
 							<ResponsiveContainer width="100%" height={280}>
 								<BarChart
@@ -244,9 +226,7 @@ const Dashboard = () => {
 									<YAxis tick={{ fontSize: 12, fill: "#6b7280" }} width={50} />
 									<Tooltip
 										formatter={(value) => [`${currency}${value}`, "Earnings"]}
-										labelFormatter={(_, payload) =>
-											payload?.[0]?.payload?.courseTitle || ""
-										}
+										labelFormatter={(_, payload) => payload?.[0]?.payload?.courseTitle || ""}
 									/>
 									<Bar dataKey="earnings" fill="#2563eb" radius={[4, 4, 0, 0]} />
 								</BarChart>
