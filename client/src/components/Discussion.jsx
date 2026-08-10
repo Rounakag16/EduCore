@@ -11,7 +11,7 @@ const Discussion = ({ courseId }) => {
 	const [loading, setLoading] = useState(true);
 	const [text, setText] = useState("");
 	const [sending, setSending] = useState(false);
-	const bottomRef = useRef(null);
+	const messagesContainerRef = useRef(null);
 
 	const fetchMessages = async () => {
 		setLoading(true);
@@ -59,7 +59,17 @@ const Discussion = ({ courseId }) => {
 	}, [courseId]);
 
 	useEffect(() => {
-		bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+		// Scroll only this component's own message list to its latest
+		// message — never the page. The previous version used
+		// bottomRef.scrollIntoView(), which by default can scroll ANY
+		// scrollable ancestor (including the whole page) to bring its target
+		// into view. Since this effect fires the moment the initial message
+		// fetch resolves, that was dragging the entire page down to the
+		// Discussion panel right after landing on it.
+		const container = messagesContainerRef.current;
+		if (container) {
+			container.scrollTop = container.scrollHeight;
+		}
 	}, [messages]);
 
 	const handleSend = async (e) => {
@@ -98,7 +108,7 @@ const Discussion = ({ courseId }) => {
 			<div className="px-4 py-3 border-b border-gray-500/20 font-medium text-gray-800">
 				Course Discussion
 			</div>
-			<div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+			<div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
 				{loading ? (
 					<p className="text-sm text-gray-400">Loading discussion…</p>
 				) : messages.length === 0 ? (
@@ -130,7 +140,6 @@ const Discussion = ({ courseId }) => {
 						</div>
 					))
 				)}
-				<div ref={bottomRef} />
 			</div>
 			<form onSubmit={handleSend} className="flex gap-2 px-3 py-3 border-t border-gray-500/20">
 				<input

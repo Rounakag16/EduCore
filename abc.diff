@@ -1,0 +1,219 @@
+diff --git a/client/src/components/Discussion.jsx b/client/src/components/Discussion.jsx
+index c0abdd6..e1d946b 100644
+--- a/client/src/components/Discussion.jsx
++++ b/client/src/components/Discussion.jsx
+@@ -11,7 +11,7 @@ const Discussion = ({ courseId }) => {
+ 	const [loading, setLoading] = useState(true);
+ 	const [text, setText] = useState("");
+ 	const [sending, setSending] = useState(false);
+-	const bottomRef = useRef(null);
++	const messagesContainerRef = useRef(null);
+ 
+ 	const fetchMessages = async () => {
+ 		setLoading(true);
+@@ -59,7 +59,17 @@ const Discussion = ({ courseId }) => {
+ 	}, [courseId]);
+ 
+ 	useEffect(() => {
+-		bottomRef.current?.scrollIntoView({ behavior: "smooth" });
++		// Scroll only this component's own message list to its latest
++		// message — never the page. The previous version used
++		// bottomRef.scrollIntoView(), which by default can scroll ANY
++		// scrollable ancestor (including the whole page) to bring its target
++		// into view. Since this effect fires the moment the initial message
++		// fetch resolves, that was dragging the entire page down to the
++		// Discussion panel right after landing on it.
++		const container = messagesContainerRef.current;
++		if (container) {
++			container.scrollTop = container.scrollHeight;
++		}
+ 	}, [messages]);
+ 
+ 	const handleSend = async (e) => {
+@@ -98,7 +108,7 @@ const Discussion = ({ courseId }) => {
+ 			<div className="px-4 py-3 border-b border-gray-500/20 font-medium text-gray-800">
+ 				Course Discussion
+ 			</div>
+-			<div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
++			<div ref={messagesContainerRef} className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
+ 				{loading ? (
+ 					<p className="text-sm text-gray-400">Loading discussion…</p>
+ 				) : messages.length === 0 ? (
+@@ -130,7 +140,6 @@ const Discussion = ({ courseId }) => {
+ 						</div>
+ 					))
+ 				)}
+-				<div ref={bottomRef} />
+ 			</div>
+ 			<form onSubmit={handleSend} className="flex gap-2 px-3 py-3 border-t border-gray-500/20">
+ 				<input
+diff --git a/client/src/components/PasswordField.jsx b/client/src/components/PasswordField.jsx
+new file mode 100644
+index 0000000..51b845b
+--- /dev/null
++++ b/client/src/components/PasswordField.jsx
+@@ -0,0 +1,66 @@
++import React, { useState } from "react";
++
++const EyeIcon = () => (
++	<svg
++		xmlns="http://www.w3.org/2000/svg"
++		viewBox="0 0 24 24"
++		fill="none"
++		stroke="currentColor"
++		strokeWidth="2"
++		strokeLinecap="round"
++		strokeLinejoin="round"
++		className="w-4.5 h-4.5"
++	>
++		<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z" />
++		<circle cx="12" cy="12" r="3" />
++	</svg>
++);
++
++const EyeOffIcon = () => (
++	<svg
++		xmlns="http://www.w3.org/2000/svg"
++		viewBox="0 0 24 24"
++		fill="none"
++		stroke="currentColor"
++		strokeWidth="2"
++		strokeLinecap="round"
++		strokeLinejoin="round"
++		className="w-4.5 h-4.5"
++	>
++		<path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a17.4 17.4 0 0 1-3.35 4.6M6.6 6.6C3.2 8.6 1 12 1 12s4 8 11 8a9.3 9.3 0 0 0 5.4-1.6M9.9 9.9a3 3 0 0 0 4.2 4.2" />
++		<line x1="1" y1="1" x2="23" y2="23" />
++	</svg>
++);
++
++// Labeled password input with a show/hide toggle. Pass any other <input>
++// props (required, minLength, etc.) through — they're spread onto the input.
++const PasswordField = ({ label, value, onChange, helperText, ...inputProps }) => {
++	const [visible, setVisible] = useState(false);
++
++	return (
++		<div>
++			<label className="text-sm text-gray-600">{label}</label>
++			<div className="relative mt-1">
++				<input
++					type={visible ? "text" : "password"}
++					value={value}
++					onChange={onChange}
++					className="w-full border border-gray-500/30 bg-transparent rounded px-3 py-2 pr-10 text-gray-800 outline-none focus:border-blue-500"
++					{...inputProps}
++				/>
++				<button
++					type="button"
++					onClick={() => setVisible((prev) => !prev)}
++					className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
++					aria-label={visible ? "Hide password" : "Show password"}
++					tabIndex={-1}
++				>
++					{visible ? <EyeOffIcon /> : <EyeIcon />}
++				</button>
++			</div>
++			{helperText && <p className="text-xs text-gray-400 mt-1">{helperText}</p>}
++		</div>
++	);
++};
++
++export default PasswordField;
+diff --git a/client/src/pages/auth/Login.jsx b/client/src/pages/auth/Login.jsx
+index 3aef21f..142e9ca 100644
+--- a/client/src/pages/auth/Login.jsx
++++ b/client/src/pages/auth/Login.jsx
+@@ -1,6 +1,7 @@
+ import React, { useContext, useState } from "react";
+ import { AppContext } from "../../context/AppContext";
+ import { Link } from "react-router-dom";
++import PasswordField from "../../components/PasswordField";
+ 
+ const Login = () => {
+ 	const { login, navigate } = useContext(AppContext);
+@@ -36,16 +37,12 @@ const Login = () => {
+ 							className="mt-1 w-full border border-gray-500/30 bg-transparent rounded px-3 py-2 text-gray-800 outline-none focus:border-blue-500"
+ 						/>
+ 					</div>
+-					<div>
+-						<label className="text-sm text-gray-600">Password</label>
+-						<input
+-							type="password"
+-							required
+-							value={password}
+-							onChange={(e) => setPassword(e.target.value)}
+-							className="mt-1 w-full border border-gray-500/30 bg-transparent rounded px-3 py-2 text-gray-800 outline-none focus:border-blue-500"
+-						/>
+-					</div>
++					<PasswordField
++						label="Password"
++						required
++						value={password}
++						onChange={(e) => setPassword(e.target.value)}
++					/>
+ 					<button
+ 						type="submit"
+ 						disabled={submitting}
+diff --git a/client/src/pages/auth/Register.jsx b/client/src/pages/auth/Register.jsx
+index cf0142a..69585e0 100644
+--- a/client/src/pages/auth/Register.jsx
++++ b/client/src/pages/auth/Register.jsx
+@@ -1,16 +1,24 @@
+ import React, { useContext, useState } from "react";
+ import { AppContext } from "../../context/AppContext";
+ import { Link } from "react-router-dom";
++import { toast } from "react-toastify";
++import PasswordField from "../../components/PasswordField";
+ 
+ const Register = () => {
+ 	const { register, navigate } = useContext(AppContext);
+ 	const [name, setName] = useState("");
+ 	const [email, setEmail] = useState("");
+ 	const [password, setPassword] = useState("");
++	const [confirmPassword, setConfirmPassword] = useState("");
+ 	const [submitting, setSubmitting] = useState(false);
+ 
+ 	const handleSubmit = async (e) => {
+ 		e.preventDefault();
++
++		if (password !== confirmPassword) {
++			return toast.error("Passwords don't match");
++		}
++
+ 		setSubmitting(true);
+ 		const success = await register(name, email, password);
+ 		setSubmitting(false);
+@@ -47,18 +55,21 @@ const Register = () => {
+ 							className="mt-1 w-full border border-gray-500/30 bg-transparent rounded px-3 py-2 text-gray-800 outline-none focus:border-blue-500"
+ 						/>
+ 					</div>
+-					<div>
+-						<label className="text-sm text-gray-600">Password</label>
+-						<input
+-							type="password"
+-							required
+-							minLength={8}
+-							value={password}
+-							onChange={(e) => setPassword(e.target.value)}
+-							className="mt-1 w-full border border-gray-500/30 bg-transparent rounded px-3 py-2 text-gray-800 outline-none focus:border-blue-500"
+-						/>
+-						<p className="text-xs text-gray-400 mt-1">At least 8 characters.</p>
+-					</div>
++					<PasswordField
++						label="Password"
++						required
++						minLength={8}
++						value={password}
++						onChange={(e) => setPassword(e.target.value)}
++						helperText="At least 8 characters."
++					/>
++					<PasswordField
++						label="Confirm Password"
++						required
++						minLength={8}
++						value={confirmPassword}
++						onChange={(e) => setConfirmPassword(e.target.value)}
++					/>
+ 					<button
+ 						type="submit"
+ 						disabled={submitting}

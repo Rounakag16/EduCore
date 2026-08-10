@@ -1,6 +1,7 @@
 import React, { useContext, useState } from "react";
 import { AppContext } from "../../context/AppContext";
 import { Link } from "react-router-dom";
+import PasswordField from "../../components/PasswordField";
 
 const Login = () => {
 	const { login, navigate } = useContext(AppContext);
@@ -36,16 +37,12 @@ const Login = () => {
 							className="mt-1 w-full border border-gray-500/30 bg-transparent rounded px-3 py-2 text-gray-800 outline-none focus:border-blue-500"
 						/>
 					</div>
-					<div>
-						<label className="text-sm text-gray-600">Password</label>
-						<input
-							type="password"
-							required
-							value={password}
-							onChange={(e) => setPassword(e.target.value)}
-							className="mt-1 w-full border border-gray-500/30 bg-transparent rounded px-3 py-2 text-gray-800 outline-none focus:border-blue-500"
-						/>
-					</div>
+					<PasswordField
+						label="Password"
+						required
+						value={password}
+						onChange={(e) => setPassword(e.target.value)}
+					/>
 					<button
 						type="submit"
 						disabled={submitting}
