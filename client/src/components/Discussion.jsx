@@ -2,7 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { AppContext } from "../context/AppContext";
-import { assets } from "../assets/assets";
+import Avatar from "./Avatar";
 import { getPusherClient } from "../configs/pusher";
 
 const Discussion = ({ courseId }) => {
@@ -118,10 +118,11 @@ const Discussion = ({ courseId }) => {
 				) : (
 					messages.map((m) => (
 						<div key={m._id} className="flex gap-2 items-start">
-							<img
-								src={m.userImage || assets.profile}
+							<Avatar
+								src={m.userImage}
 								alt={m.userName}
-								className="w-7 h-7 rounded-full object-cover shrink-0 mt-0.5"
+								size="w-7 h-7"
+								className="mt-0.5"
 							/>
 							<div className="min-w-0">
 								<div className="flex items-baseline gap-2">

@@ -5,6 +5,7 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { SkeletonBlock, SkeletonStatCard, SkeletonTable } from "../../components/Skeletons";
 import EmptyState from "../../components/EmptyState";
+import Avatar from "../../components/Avatar";
 import {
 	Bar,
 	BarChart,
@@ -105,11 +106,7 @@ const Dashboard = () => {
 										<tr key={index} className="border-b border-gray-500/20">
 											<td className="px-4 py-3 text-center hidden sm:table-cell">{index + 1}</td>
 											<td className="md:px-4 px-2 py-3 flex items-center space-x-3">
-												<img
-													src={item.student.imageUrl || assets.profile}
-													alt="profile"
-													className="w-9 h-9 rounded-full"
-												/>
+												<Avatar src={item.student.imageUrl} alt="profile" />
 												<span className="truncate">{item.student.name}</span>
 											</td>
 											<td className="px-4 py-3 truncate">{item.courseTitle}</td>

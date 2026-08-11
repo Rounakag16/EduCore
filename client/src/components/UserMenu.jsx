@@ -1,6 +1,6 @@
 import React, { useContext, useRef, useState } from "react";
 import { AppContext } from "../context/AppContext";
-import { assets } from "../assets/assets";
+import Avatar from "./Avatar";
 import axios from "axios";
 import { toast } from "react-toastify";
 
@@ -56,20 +56,12 @@ const UserMenu = () => {
 	return (
 		<div className="relative" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
 			<button onClick={() => setOpen((prev) => !prev)} className="flex items-center gap-2">
-				<img
-					src={userData.imageUrl || assets.profile}
-					alt={userData.name}
-					className="w-8 h-8 rounded-full object-cover"
-				/>
+				<Avatar src={userData.imageUrl} alt={userData.name} size="w-8 h-8" />
 			</button>
 			{open && (
 				<div className="absolute right-0 mt-2 w-52 bg-white border border-gray-500/20 rounded-md shadow-lg py-2 z-50 text-sm">
 					<div className="px-4 py-2 border-b border-gray-500/10 flex items-center gap-3">
-						<img
-							src={userData.imageUrl || assets.profile}
-							alt={userData.name}
-							className="w-10 h-10 rounded-full object-cover shrink-0"
-						/>
+						<Avatar src={userData.imageUrl} alt={userData.name} size="w-10 h-10" />
 						<div className="min-w-0">
 							<p className="font-medium text-gray-800 truncate">{userData.name}</p>
 							<p className="text-gray-500 truncate text-xs">{userData.email}</p>

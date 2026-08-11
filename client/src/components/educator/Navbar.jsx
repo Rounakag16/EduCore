@@ -1,5 +1,6 @@
 import React, { useContext } from "react";
 import { assets } from "../../assets/assets";
+import Avatar from "../Avatar";
 import { Link } from "react-router-dom";
 import { AppContext } from "../../context/AppContext";
 import UserMenu from "../UserMenu";
@@ -13,7 +14,7 @@ const Navbar = () => {
 			</Link>
 			<div className="flex items-center gap-5 text-gray-500 relative">
 				<p>Hi! {userData ? userData.name : "Educator"}</p>
-				{userData ? <UserMenu /> : <img className="max-w-8" src={assets.profile} />}
+				{userData ? <UserMenu /> : <Avatar size="w-8 h-8" />}
 			</div>
 		</div>
 	);

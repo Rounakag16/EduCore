@@ -1,5 +1,6 @@
 import React, { useContext } from "react";
 import { assets } from "../../assets/assets";
+import Avatar from "../Avatar";
 import { Link } from "react-router-dom";
 import { AppContext } from "../../context/AppContext";
 import axios from "axios";
@@ -83,7 +84,7 @@ const Navbar = () => {
 						<UserMenu />
 					) : (
 						<button onClick={() => navigate("/login")}>
-							<img className="h-6 w-6" src={assets.profile} alt="" />
+							<Avatar size="w-6 h-6" />
 						</button>
 					)}
 				</div>
