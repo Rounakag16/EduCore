@@ -40,6 +40,30 @@ export const SkeletonTable = ({ rows = 5, columns = 4 }) => (
 	</>
 );
 
+// Row skeleton for the card-based enrollment list (MyEnrollments) — matches
+// its layout (thumbnail + title/progress on the left, action buttons on the
+// right) rather than a <table> row.
+export const SkeletonEnrollmentRow = () => (
+	<div className="p-4 flex flex-col sm:flex-row sm:items-center gap-4 border-b border-gray-500/20 last:border-b-0">
+		<div className="flex items-center gap-3 flex-1 min-w-0">
+			<div className="skeleton w-16 sm:w-24 md:w-28 aspect-video rounded shrink-0" />
+			<div className="flex-1 min-w-0 space-y-2">
+				<div className="skeleton h-4 w-3/4 rounded" />
+				<div className="skeleton h-1.5 w-full rounded-full" />
+			</div>
+		</div>
+		<div className="skeleton h-9 w-28 rounded shrink-0 self-end sm:self-auto" />
+	</div>
+);
+
+export const SkeletonEnrollmentList = ({ rows = 4 }) => (
+	<>
+		{Array.from({ length: rows }).map((_, i) => (
+			<SkeletonEnrollmentRow key={i} />
+		))}
+	</>
+);
+
 // Stat-card skeleton for the educator dashboard
 export const SkeletonStatCard = () => (
 	<div className="flex items-center gap-3 shadow-card border border-blue-500/40 p-3 w-56 rounded-md">

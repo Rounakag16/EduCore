@@ -3,7 +3,7 @@ import { AppContext } from "../../context/AppContext";
 import { Line } from "rc-progress";
 import { toast } from "react-toastify";
 import axios from "axios";
-import { SkeletonTable } from "../../components/Skeletons";
+import { SkeletonEnrollmentList } from "../../components/Skeletons";
 import EmptyState from "../../components/EmptyState";
 
 const MyEnrollments = () => {
@@ -100,83 +100,75 @@ const MyEnrollments = () => {
 						onAction={() => navigate("/course-list")}
 					/>
 				) : (
-					<table className="md:table-auto table-fixed w-full overflow-hidden border border-gray-500/20 mt-10">
-						<thead className="text-gray-900 border-b border-gray-500/20 text-sm text-left max-sm:hidden">
-							<tr>
-								<th className="px-4 py-3 font-semibold truncate">Course</th>
-								<th className="px-4 py-3 font-semibold truncate">Duration</th>
-								<th className="px-4 py-3 font-semibold truncate">Completed</th>
-								<th className="px-4 py-3 font-semibold truncate">Status</th>
-							</tr>
-						</thead>
-						<tbody className="text-gray-700">
-							{enrolledCoursesLoading ? (
-								<SkeletonTable rows={4} columns={4} />
-							) : (
-								enrolledCourses.map((course, index) => (
-									<tr key={index} className="border-b border-gray-500/20">
-										<td className="md:px-4 pl-2 md:pl-4 py-3">
-											<div className="flex items-center gap-3">
-												<img
-													src={course.courseThumbnail}
-													alt="course thumbnail"
-													className="w-14 sm:w-24 md:w-28 shrink-0"
-												/>
-												<div className="flex-1 min-w-0">
-													<p className="mb-1 max-sm:text-sm break-words">{course.courseTitle}</p>
-													<Line
-														strokeWidth={2}
-														percent={
-															progressArray[index]
-																? (progressArray[index].lectureCompleted /
-																		progressArray[index].totalLectures) *
-																	100
-																: 0
-														}
-														className="bg-gray-300 rounded-full"
-													/>
-												</div>
-											</div>
-										</td>
-										<td className="px-4 py-3 max-sm:hidden">{calculateCourseDuration(course)}</td>
-										<td className="px-4 py-3 max-sm:hidden">
-											{progressArray[index] &&
-												`${progressArray[index].lectureCompleted} / ${progressArray[index].totalLectures}`}{" "}
-											<span>Lectures</span>
-										</td>
-										<td className="px-2 sm:px-4 py-3 w-0 whitespace-nowrap max-sm:text-right align-top">
-											<div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 justify-end">
-												<button
-													className="px-3 sm:px-5 py-1.5 sm:py-2 bg-blue-600 max-sm:text-xs text-white rounded"
-													onClick={() => navigate("/player/" + course._id)}
-												>
-													{progressArray[index] &&
-													progressArray[index].lectureCompleted ===
-														progressArray[index].totalLectures
-														? "Completed"
-														: "On going"}
-												</button>
-												{progressArray[index] &&
-													progressArray[index].totalLectures > 0 &&
-													progressArray[index].lectureCompleted ===
-														progressArray[index].totalLectures && (
-														<button
-															onClick={() => downloadCertificate(course)}
-															disabled={downloadingCertFor === course._id}
-															className="px-3 sm:px-5 py-1.5 sm:py-2 border border-blue-600 text-blue-600 max-sm:text-xs rounded disabled:opacity-60"
-														>
-															{downloadingCertFor === course._id
-																? "..."
-																: "Certificate"}
-														</button>
+					<div className="border border-gray-500/20 rounded mt-10 divide-y divide-gray-500/20">
+						{enrolledCoursesLoading ? (
+							<SkeletonEnrollmentList rows={4} />
+						) : (
+							enrolledCourses.map((course, index) => {
+								const progress = progressArray[index];
+								const isComplete =
+									progress && progress.totalLectures > 0 && progress.lectureCompleted === progress.totalLectures;
+
+								return (
+									<div
+										key={course._id}
+										className="p-4 flex flex-col sm:flex-row sm:items-center gap-4"
+									>
+										{/* Thumbnail + title + progress */}
+										<div className="flex items-center gap-3 flex-1 min-w-0">
+											<img
+												src={course.courseThumbnail}
+												alt="course thumbnail"
+												className="w-16 sm:w-24 md:w-28 rounded shrink-0 object-cover aspect-video"
+											/>
+											<div className="flex-1 min-w-0">
+												<p className="text-sm sm:text-base text-gray-800 break-words">
+													{course.courseTitle}
+												</p>
+												<p className="text-xs text-gray-500 mt-1">
+													{calculateCourseDuration(course)}
+													{progress && (
+														<>
+															{" "}
+															· {progress.lectureCompleted} / {progress.totalLectures} Lectures
+														</>
 													)}
+												</p>
+												<Line
+													strokeWidth={2}
+													percent={
+														progress
+															? (progress.lectureCompleted / progress.totalLectures) * 100
+															: 0
+													}
+													className="bg-gray-300 rounded-full mt-1.5"
+												/>
 											</div>
-										</td>
-									</tr>
-								))
-							)}
-						</tbody>
-					</table>
+										</div>
+
+										{/* Actions — never squeezed against the text column */}
+										<div className="flex sm:flex-col items-stretch sm:items-end gap-2 shrink-0 self-end sm:self-auto">
+											<button
+												className="px-4 py-2 bg-blue-600 text-white text-sm rounded whitespace-nowrap"
+												onClick={() => navigate("/player/" + course._id)}
+											>
+												{isComplete ? "Completed" : "On going"}
+											</button>
+											{isComplete && (
+												<button
+													onClick={() => downloadCertificate(course)}
+													disabled={downloadingCertFor === course._id}
+													className="px-4 py-2 border border-blue-600 text-blue-600 text-sm rounded whitespace-nowrap disabled:opacity-60"
+												>
+													{downloadingCertFor === course._id ? "…" : "Certificate"}
+												</button>
+											)}
+										</div>
+									</div>
+								);
+							})
+						)}
+					</div>
 				)}
 			</div>
 		</>
