@@ -3,6 +3,8 @@ import { AppContext } from "../../context/AppContext";
 import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import PasswordField from "../../components/PasswordField";
+import PasswordStrengthMeter from "../../components/PasswordStrengthMeter";
+import { getPasswordStrength } from "../../utils/passwordStrength";
 
 const Register = () => {
 	const { register, navigate } = useContext(AppContext);
@@ -15,6 +17,11 @@ const Register = () => {
 	const handleSubmit = async (e) => {
 		e.preventDefault();
 
+		if (!getPasswordStrength(password).isValid) {
+			return toast.error(
+				"Password must be 8+ characters and include an uppercase letter, a lowercase letter, a number, and a symbol",
+			);
+		}
 		if (password !== confirmPassword) {
 			return toast.error("Passwords don't match");
 		}
@@ -55,14 +62,16 @@ const Register = () => {
 							className="mt-1 w-full border border-gray-500/30 bg-transparent rounded px-3 py-2 text-gray-800 outline-none focus:border-blue-500"
 						/>
 					</div>
-					<PasswordField
-						label="Password"
-						required
-						minLength={8}
-						value={password}
-						onChange={(e) => setPassword(e.target.value)}
-						helperText="At least 8 characters."
-					/>
+					<div>
+						<PasswordField
+							label="Password"
+							required
+							minLength={8}
+							value={password}
+							onChange={(e) => setPassword(e.target.value)}
+						/>
+						<PasswordStrengthMeter password={password} />
+					</div>
 					<PasswordField
 						label="Confirm Password"
 						required

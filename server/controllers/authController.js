@@ -28,10 +28,18 @@ export const register = async (req, res) => {
 		if (!name || !email || !password) {
 			return res.status(400).json({ success: false, message: "All fields are required" });
 		}
-		if (password.length < 8) {
-			return res
-				.status(400)
-				.json({ success: false, message: "Password must be at least 8 characters" });
+		// Kept in sync with client/src/utils/passwordStrength.js's rule set —
+		// update both together if the complexity requirement ever changes.
+		const hasUpper = /[A-Z]/.test(password);
+		const hasLower = /[a-z]/.test(password);
+		const hasNumber = /[0-9]/.test(password);
+		const hasSymbol = /[^A-Za-z0-9]/.test(password);
+		if (password.length < 8 || !hasUpper || !hasLower || !hasNumber || !hasSymbol) {
+			return res.status(400).json({
+				success: false,
+				message:
+					"Password must be 8+ characters and include an uppercase letter, a lowercase letter, a number, and a symbol",
+			});
 		}
 
 		const existing = await User.findOne({ email: email.toLowerCase() });
