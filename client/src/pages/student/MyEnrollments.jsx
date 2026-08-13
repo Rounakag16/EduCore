@@ -115,25 +115,27 @@ const MyEnrollments = () => {
 							) : (
 								enrolledCourses.map((course, index) => (
 									<tr key={index} className="border-b border-gray-500/20">
-										<td className="md:px-4 pl-2 md:pl-4 py-3 flex items-center space-x-3">
-											<img
-												src={course.courseThumbnail}
-												alt="course thumbnail"
-												className="w-14 sm:w-24 md:w-28"
-											/>
-											<div className="flex-1">
-												<p className="mb-1 max-sm:text-sm">{course.courseTitle}</p>
-												<Line
-													strokeWidth={2}
-													percent={
-														progressArray[index]
-															? (progressArray[index].lectureCompleted /
-																	progressArray[index].totalLectures) *
-																100
-															: 0
-													}
-													className="bg-gray-300 rounded-full"
+										<td className="md:px-4 pl-2 md:pl-4 py-3">
+											<div className="flex items-center gap-3">
+												<img
+													src={course.courseThumbnail}
+													alt="course thumbnail"
+													className="w-14 sm:w-24 md:w-28 shrink-0"
 												/>
+												<div className="flex-1 min-w-0">
+													<p className="mb-1 max-sm:text-sm break-words">{course.courseTitle}</p>
+													<Line
+														strokeWidth={2}
+														percent={
+															progressArray[index]
+																? (progressArray[index].lectureCompleted /
+																		progressArray[index].totalLectures) *
+																	100
+																: 0
+														}
+														className="bg-gray-300 rounded-full"
+													/>
+												</div>
 											</div>
 										</td>
 										<td className="px-4 py-3 max-sm:hidden">{calculateCourseDuration(course)}</td>
@@ -142,8 +144,8 @@ const MyEnrollments = () => {
 												`${progressArray[index].lectureCompleted} / ${progressArray[index].totalLectures}`}{" "}
 											<span>Lectures</span>
 										</td>
-										<td className="px-4 py-3 max-sm:text-right">
-											<div className="flex items-center gap-2 justify-end max-sm:justify-end">
+										<td className="px-2 sm:px-4 py-3 w-0 whitespace-nowrap max-sm:text-right align-top">
+											<div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 justify-end">
 												<button
 													className="px-3 sm:px-5 py-1.5 sm:py-2 bg-blue-600 max-sm:text-xs text-white rounded"
 													onClick={() => navigate("/player/" + course._id)}
